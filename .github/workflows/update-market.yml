@@ -1,0 +1,38 @@
+name: Update Market & Weather
+
+on:
+  schedule:
+    # Every 5 hours
+    - cron: '0 */5 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Generate Market Analysis
+      run: python3 generate_market.py
+      
+    - name: Generate Weather
+      run: python3 generate_weather.py
+      
+    - name: Commit and Push
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add index.html market.html weather.html
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update market + weather $(date -u +%Y-%m-%d_%H:%M)"
+          git push
+        fi
