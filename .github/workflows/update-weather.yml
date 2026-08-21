@@ -1,0 +1,35 @@
+name: Update Weather
+
+on:
+  schedule:
+    # Every day at 03:00 UTC (06:30 Tehran time)
+    - cron: '0 3 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Generate Weather HTML
+      run: python3 generate_weather.py
+      
+    - name: Commit and Push
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add index.html
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update weather $(date -u +%Y-%m-%d_%H:%M)"
+          git push
+        fi
