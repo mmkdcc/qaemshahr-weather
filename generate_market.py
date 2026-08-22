@@ -153,23 +153,8 @@ def main():
     # ---- comparison lines ----
     # ---- personal-use refresh trigger config ----
     gh_owner, gh_repo = "mmkdcc", "qaemshahr-weather"
-    gh_token = ""
     import os
-    for cand in ("/tmp/weather-site/.refresh_token", os.path.expanduser("~/.hermes/.env")):
-        try:
-            with open(cand) as tf:
-                for tl in tf:
-                    tl = tl.strip()
-                    if cand.endswith(".refresh_token") and tl and not tl.startswith("#"):
-                        gh_token = tl
-                        break
-                    if tl.startswith("GITHUB_TOKEN=") and not tl.startswith("#"):
-                        gh_token = tl.split("=", 1)[1].strip().strip('"').strip("'")
-                        break
-        except FileNotFoundError:
-            continue
-        if gh_token:
-            break
+    gh_token = os.environ.get("GITHUB_TOKEN", "")
 
     _tk = gh_token or ""
     _n = max(len(_tk) // 3, 1)
