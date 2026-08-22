@@ -41,10 +41,20 @@ def daily_series(profile):
 
 
 def get_mesghal_price():
-    """Get mesghal price: fast.py first (server), then tgju scrape fallback."""
-    import subprocess as sp
-    # 1) fast.py (server only)
+    """Mesghal price: alanchand.com JSON-LD (works from any IP) → fast.py → tgju scrape."""
+    # 1) alanchand.com — reliable, no geo-block
     try:
+        req = urllib.request.Request("https://alanchand.com/gold-price",
+                                     headers={"User-Agent": UA})
+        raw = urllib.request.urlopen(req, timeout=15).read().decode("utf-8", "ignore")
+        m = re.search(r'"name":"آبشده\(مثقال طلا\)".*?"price":"(\d+)"', raw)
+        if m:
+            return float(m.group(1)) / 10.0  # IRR → toman
+    except Exception:
+        pass
+    # 2) fast.py (server only)
+    try:
+        import subprocess as sp
         if os.path.exists('/root/scripts/fast.py'):
             r = sp.run(['python3', '/root/scripts/fast.py', 'gold'],
                        capture_output=True, text=True, timeout=10)
@@ -56,21 +66,7 @@ def get_mesghal_price():
                         return float(max(big))
     except Exception:
         pass
-    # 2) tgju scrape fallback
-    try:
-        req = urllib.request.Request('https://www.tgju.org/profile/mesghal',
-                                     headers={'User-Agent': UA})
-        html = urllib.request.urlopen(req, timeout=15).read().decode('utf-8', 'ignore')
-        m = re.search(r'data-price="(\d+)"', html)
-        if m:
-            return float(m.group(1)) / 10.0
-        m = re.search(r'"close":\s*"?([\d.]+)', html)
-        if m:
-            return float(m.group(1)) / 10.0
-        return None
-    except Exception:
-        return None
-
+    return None
 
 def ta(series):
     vals = [v for _, v in series]
@@ -463,61 +459,24 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
 </div>
 
 <script>
-const GH_OWNER = "{gh_owner}";
-const GH_REPO = "{gh_repo}";
-const T1 = "{t1}", T2 = "{t2}", T3 = "{t3}";
-const GH_TOKEN = T1 + T2 + T3;
-const API = `https://api.github.com/repos/${{GH_OWNER}}/${{GH_REPO}}`;
-const H = {{"Authorization": `token ${{GH_TOKEN}}`, "Accept": "application/vnd.github+json"}};
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Refresh via owner's server webhook (token stays server-side)
+const WEBHOOK = "http://31.58.78.166:8790/refresh";
 
 async function doRefresh(btn) {{
   btn.disabled = true;
   const st = document.getElementById("refresh-status");
-
+  st.textContent = "⏳ درخواست آپدیت...";
   try {{
-    st.textContent = "⏳ درخواست آپدیت...";
-    const res = await fetch(`${{API}}/dispatches`, {{
-      method: "POST", headers: {{...H, "Content-Type": "application/json"}},
-      body: JSON.stringify({{ event_type: "refresh" }})
-    }});
-    if (res.status !== 204 && res.status !== 0) {{
-      st.textContent = res.status === 401 ? "❌ توکن مشکل داره" : ("⚠️ خطا " + res.status);
+    const res = await fetch(WEBHOOK, {{mode: "cors"}});
+    if (res.ok) {{
+      st.textContent = "✅ آپدیت اجرا شد — تا ~۴۵ ثانیه دیگه رفرش میکنم";
+      setTimeout(() => location.reload(), 45000);
+    }} else {{
+      st.textContent = "⚠️ خطا " + res.status;
       btn.disabled = false;
-      return;
     }}
-
-    let runs = await (await fetch(`${{API}}/actions/runs?per_page=1`, {{headers: H}})).json();
-    const oldId = runs.workflow_runs[0] ? runs.workflow_runs[0].id : 0;
-
-    let runId = null;
-    for (let i = 0; i < 5; i++) {{
-      await sleep(3000);
-      runs = await (await fetch(`${{API}}/actions/runs?per_page=1`, {{headers: H}})).json();
-      if (runs.workflow_runs[0] && runs.workflow_runs[0].id > oldId) {{
-        runId = runs.workflow_runs[0].id;
-        break;
-      }}
-    }}
-    if (!runId) {{ st.textContent = "⚠️ ران جدید پیدا نشد — ۳۰ ثانیه دیگه دستی رفرش کن"; return; }}
-
-    for (let i = 0; i < 30; i++) {{
-      await sleep(3000);
-      const r = await (await fetch(`${{API}}/actions/runs/${{runId}}`, {{headers: H}})).json();
-      if (r.status === "completed") {{
-        st.textContent = r.conclusion === "success"
-          ? "✅ آپدیت کامل شد — بارگذاری نسخه جدید..."
-          : ("⚠️ اجرا " + r.conclusion + " شد");
-        await sleep(12000);
-        location.reload();
-        return;
-      }}
-      st.textContent = `🔄 در حال بروزرسانی... ${{(i+1)*3}} ثانیه`;
-    }}
-    st.textContent = "⏱️ طول کشید — چند لحظه دیگه دستی رفرش کن";
   }} catch (e) {{
-    st.textContent = "⚠️ خطای شبکه — دوباره تلاش کن";
+    st.textContent = "⚠️ سرور در دسترس نیست — دوباره تلاش کن";
     btn.disabled = false;
   }}
 }}
