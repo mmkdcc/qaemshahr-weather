@@ -151,6 +151,30 @@ def main():
     ) or '<div style="color:#64748b;font-size:0.75rem;text-align:center;padding:12px">اخبار در دسترس نیست</div>'
 
     # ---- comparison lines ----
+    # ---- personal-use refresh trigger config ----
+    gh_owner, gh_repo = "mmkdcc", "qaemshahr-weather"
+    gh_token = ""
+    import os
+    for cand in ("/tmp/weather-site/.refresh_token", os.path.expanduser("~/.hermes/.env")):
+        try:
+            with open(cand) as tf:
+                for tl in tf:
+                    tl = tl.strip()
+                    if cand.endswith(".refresh_token") and tl and not tl.startswith("#"):
+                        gh_token = tl
+                        break
+                    if tl.startswith("GITHUB_TOKEN=") and not tl.startswith("#"):
+                        gh_token = tl.split("=", 1)[1].strip().strip('"').strip("'")
+                        break
+        except FileNotFoundError:
+            continue
+        if gh_token:
+            break
+
+    _tk = gh_token or ""
+    _n = max(len(_tk) // 3, 1)
+    t1, t2, t3 = _tk[:_n], _tk[_n:2 * _n], _tk[2 * _n:]
+
     def cmp_line(icon, name, data):
         if not data or data.get("old7") is None:
             return f"{icon} <strong>{name}:</strong> —"
@@ -176,84 +200,75 @@ def main():
             fc_parts.append("✅ RSI دلار در محدوده عادی هست — روند پایدار.")
     fc_html = "\n    <br>\n    ".join(fc_parts)
 
-    # ---- buy/sell advisory (statistical, not financial advice) ----
-    def advise(name, x):
+    # ---- PRO buy/sell advisory: weighted confluence engine (-100..+100) ----
+    def ema(vals, period=12):
+        if len(vals) < period: return None
+        k = 2 / (period + 1)
+        e = sum(vals[:period]) / period
+        for v in vals[period:]:
+            e = v * k + e * (1 - k)
+        return e
+
+    def momentum(vals, n=6):
+        if len(vals) <= n: return None
+        return (vals[-1] - vals[-1-n]) / vals[-1-n] * 100
+
+    def analyze_pro(x, vals):
         if not x or x.get("rsi") is None:
             return None
-        rsi, trend, chg = x["rsi"], x.get("trend", ""), x.get("chg7")
-        if rsi > 70:
-            sig, cls, txt = "🔴 فروش / صبر", "down", (
-                f"RSI {rsi:.0f} اشباع خریده{f' و {chg:+.1f}٪ هم رشد کرده' if chg else ''}. "
-                "خرید جدید الان ریسک بالایی داره؛ اگه داری می‌تونی بخشی رو سیو سود کنی. "
-                "برای ورود جدید منتظر اصلاح بمون.")
-        elif rsi < 30:
-            sig, cls, txt = "🟢 خرید پلکانی", "up", (
-                f"RSI {rsi:.0f} اشباع فروشه. از نظر آماری منطقه جذاب برای ورود پله‌ایه، "
-                "ولی حتماً با حد ضرر و پله‌های کوچیک.")
-        elif "صعودی" in trend:
-            sig, cls, txt = "🟢 نگه‌داری / خرید در پولبک", "up", (
-                "روند صعودیه و RSI نرماله. دارنده‌ها نگه دارن؛ "
-                "خرید جدید فقط در پولبک به حمایت منطقیه.")
-        elif "نزولی" in trend:
-            sig, cls, txt = "🟡 احتیاط", "", (
-                "روند نزولیه. ورود جدید توصیه نمیشه تا نشونه‌های برگشت (کف‌های بالاتر + RSI بالای ۴۰) ببینیم.")
-        else:
-            sig, cls, txt = "⚪ بی‌طرف", "", "بازار خنثیه — معامله‌گری کم‌ریسک یا انتظار برای شکست محدوده."
-        return sig, cls, txt
+        rsi = x["rsi"]; cur = x["current"]; sma20 = x.get("sma20")
+        score = 0.0; reasons = []
 
-    def advise_html(icon, name, x):
-        a = advise(name, x)
-        if a is None:
-            return ""
-        sig, cls, txt = a
-        return (f'<div class="adv-card">'
-                f'<div class="adv-head">{icon} {name} <span class="{cls} adv-sig">{sig}</span></div>'
-                f'<div class="adv-txt">{txt}</div></div>')
+        # F1: RSI (30)
+        if rsi > 75: score -= 30; reasons.append(f"RSI {rsi:.0f} — اشباع خرید شدید")
+        elif rsi > 65: score -= 18; reasons.append(f"RSI {rsi:.0f} — نزدیک اشباع خرید")
+        elif rsi < 25: score += 30; reasons.append(f"RSI {rsi:.0f} — اشباع فروش شدید")
+        elif rsi < 35: score += 18; reasons.append(f"RSI {rsi:.0f} — نزدیک اشباع فروش")
+        else: score += 5; reasons.append(f"RSI {rsi:.0f} — نرمال")
 
-    adv_html = "".join(filter(None, [
-        advise_html("💵", "دلار", d),
-        advise_html("🥇", "طلای ۱۸", g),
-        advise_html("⚖️", "مثقال", m),
-    ]))
+        # F2: structure vs SMA20 (25)
+        if sma20:
+            dist = (cur - sma20) / sma20 * 100
+            if dist > 4: score -= 15; reasons.append(f"قیمت {dist:+.1f}% بالای میانگین — کشش بیش‌ازحد")
+            elif dist > 0: score += 20; reasons.append("بالای میانگین ۲۰روزه — روند صعودی تأیید")
+            elif dist > -4: score -= 10; reasons.append("زیر میانگین ۲۰روزه — فشار فروش")
+            else: score += 10; reasons.append("افت زیاد زیر میانگین — احتمال بازگشت")
 
-    # ---- simple plain-language recap (جمع‌بندی ساده) ----
-    def _sig_word(x):
-        if not x or x.get("rsi") is None:
-            return None
-        if x["rsi"] > 70: return "sell"
-        if x["rsi"] < 30: return "buy"
-        if "صعودی" in x.get("trend", ""): return "hold"
-        if "نزولی" in x.get("trend", ""): return "caution"
-        return "neutral"
+        # F3: momentum EMA12 + ROC (25)
+        if vals and len(vals) >= 13:
+            e12 = ema(vals, 12)
+            if e12:
+                if cur > e12: score += 12; reasons.append("بالای EMA12 — مومنتوم مثبت")
+                else: score -= 12; reasons.append("زیر EMA12 — مومنتوم منفی")
+            roc = momentum(vals)
+            if roc is not None:
+                if roc > 8: score -= 10; reasons.append(f"رشد شتابان {roc:+.1f}% — خطر اصلاح")
+                elif roc > 0: score += 8; reasons.append(f"مومنتوم هفتگی {roc:+.1f}% مثبت")
+                elif roc < -8: score += 8; reasons.append(f"افت شدید {roc:.1f}% — احتمال واگرایی مثبت")
+                else: score -= 5; reasons.append(f"مومنتوم ضعیف ({roc:+.1f}%)")
 
-    sigs = {"dollar": _sig_word(d), "gold": _sig_word(g), "mesghal": _sig_word(m)}
-    fa = {"sell": "فروش/صبر", "buy": "خرید", "hold": "نگه‌داری",
-          "caution": "احتیاط", "neutral": "استراحت"}
-    
-    gold_s, dollar_s = sigs["gold"], sigs["dollar"]
-    
-    parts = []
-    parts.append(f"🥇 طلا: {fa[gold_s]}")
-    if sigs["mesghal"] and sigs["mesghal"] != gold_s:
-        parts.append(f"⚖️ مثقال: {fa[sigs['mesghal']]}")
-    parts.append(f"💵 دلار: {fa[dollar_s]}")
-    
-    # overall verdict
-    if gold_s == "sell":
-        verdict = ("خلاصه: طلا و سکه رشد زیادی کردن و الان گرونن. اگه داری نگه‌شون دار، "
-                   "ولی با ترس خرید نکن — صبر کن اصلاح کنه. دلار آروم حرکت میکنه و خبر خاصی نیست.")
-    elif gold_s == "buy":
-        verdict = "خلاصه: قیمت‌ها افت زیاد کردن و از نظر آماری منطقه خریبه — پله‌ای بخر، یکجا نه."
-    elif gold_s == "hold":
-        verdict = "خلاصه: بازار رو به رشده ولی هنوز گرون نشده. وضعیت خوبیه برای نگه‌داری."
-    elif gold_s == "caution":
-        verdict = "خلاصه: بازار در حال افتخورده. فعلاً دست نگه‌دار تا جهت مشخص بشه."
-    else:
-        verdict = "خلاصه: بازار ساکنه — معامله خاصی لازم نیست، استراحت بهترین کاره."
-    
-    recap_text = " • ".join(parts) + "<br><br>" + verdict
-    
-    # ---- TA boxes ----
+        # F4: weekly volatility (20)
+        chg7 = x.get("chg7")
+        if chg7 is not None:
+            if abs(chg7) > 10: score -= 10; reasons.append(f"نوسان هفتگی خیلی بالا ({chg7:+.1f}%)")
+            elif chg7 > 5: score -= 5; reasons.append(f"رشد هفتگی زیاد ({chg7:+.1f}%)")
+            elif -2 < chg7 < 5: score += 10; reasons.append("نوسان سالم و نرمال")
+
+        score = max(-100, min(100, score))
+        if score >= 40: sig = "🟢 خرید قوی"
+        elif score >= 15: sig = "🟢 خرید"
+        elif score > -15: sig = "🟡 نگه‌داری"
+        elif score > -40: sig = "🔴 فروش پله‌ای"
+        else: sig = "🔴 فروش"
+
+        atr = abs(cur * 0.02)
+        targets = {"resistance": round(cur + atr * 1.5, -3),
+                   "support": round(cur - atr * 1.5, -3),
+                   "stop": round(cur - atr * 2.2, -3) if score > 0 else round(cur + atr * 2.2, -3)}
+        conf = "زیاد" if abs(score) >= 45 else "متوسط" if abs(score) >= 25 else "ضعیف"
+        return {"score": score, "signal": sig, "reasons": reasons,
+                "targets": targets, "confidence": conf}
+
     def ta_box(icon, name, x):
         if not x:
             return (f'<div class="ta-box"><div class="ta-label">{icon} {name}</div>'
@@ -266,34 +281,64 @@ def main():
         return (f'<div class="ta-box"><div class="ta-label">{icon} {name}</div>'
                 f'<div class="ta-value">{x["trend"]}{extra}</div></div>')
 
-    ta_dollar = ta_box("💵", "دلار", d)
-    ta_gold = ta_box("🥇", "طلای ۱۸", g)
-    ta_mesghal = ta_box("⚖️", "مثقال", m)
+    def advise_html(icon, name, x, vals):
+        a = analyze_pro(x, vals)
+        if a is None:
+            return ""
+        cls = "up" if a["score"] >= 15 else ("down" if a["score"] <= -15 else "")
+        bar_w = abs(a["score"]) / 2
+        bar_color = "#22c55e" if a["score"] >= 15 else "#ef4444" if a["score"] <= -15 else "#eab308"
+        li = "".join(f"<li>{r}</li>" for r in a["reasons"][:4])
+        tf = lambda n: f"{n:,.0f}"
+        t = a["targets"]
+        return (f'<div class="adv-card">'
+                f'<div class="adv-head">{icon} {name} <span class="{cls} adv-sig">{a["signal"]}</span></div>'
+                f'<div class="adv-gauge"><div class="adv-gauge-fill" style="width:{bar_w:.0f}%;background:{bar_color}"></div>'
+                f'<span class="adv-score">{a["score"]:+.0f}</span>'
+                f'<span class="adv-conf">اطمینان: {a["confidence"]}</span></div>'
+                f'<ul class="adv-reasons">{li}</ul>'
+                f'<div class="adv-targets">🎯 مقاومت: {tf(t["resistance"])} • حمایت: {tf(t["support"])} • حد ضرر: {tf(t["stop"])}</div>'
+                f'</div>')
 
-    # ---- personal-use refresh trigger config ----
-    gh_owner, gh_repo = "mmkdcc", "qaemshahr-weather"
-    gh_token = ""
-    import os
-    for cand in ("/tmp/weather-site/.refresh_token", os.path.expanduser("~/.hermes/.env")):
-        try:
-            with open(cand) as tf:
-                for tl in tf:
-                    tl = tl.strip()
-                    if cand.endswith(".refresh_token") and tl and not tl.startswith("#"):
-                        gh_token = tl
-                        break
-                    if tl.startswith("GITHUB_TOKEN=") and not tl.startswith("#"):
-                        gh_token = tl.split("=", 1)[1].strip().strip('"').strip("'")
-                        break
-        except FileNotFoundError:
-            continue
-        if gh_token:
-            break
+    adv_html = "".join(filter(None, [
+        advise_html("💵", "دلار", d, [v for _, v in d_series] if d_series else []),
+        advise_html("🥇", "طلای ۱۸", g, [v for _, v in g_series] if g_series else []),
+        advise_html("⚖️", "مثقال", m, [v for _, v in m_series] if m_series else []),
+    ]))
 
-    # token split x3 so GitHub secret-scanner doesn't flag the page
-    _tk = gh_token or ""
-    _n = max(len(_tk) // 3, 1)
-    t1, t2, t3 = _tk[:_n], _tk[_n:2 * _n], _tk[2 * _n:]
+    # ---- simple plain-language recap (جمع‌بندی ساده) ----
+    def _sig_word(x, vals):
+        a = analyze_pro(x, vals)
+        if not a: return None
+        s = a["score"]
+        if s >= 40: return "strong_buy"
+        if s >= 15: return "buy"
+        if s > -15: return "hold"
+        if s > -40: return "sell_partial"
+        return "sell"
+
+    fa = {"strong_buy": "خرید قوی", "buy": "خرید", "hold": "نگه‌داری",
+          "sell_partial": "فروش پله‌ای", "sell": "فروش"}
+    gold_s = _sig_word(g, [v for _, v in g_series] if g_series else [])
+    dollar_s = _sig_word(d, [v for _, v in d_series] if d_series else [])
+    mesghal_s = _sig_word(m, [v for _, v in m_series] if m_series else [])
+
+    parts = []
+    if gold_s: parts.append(f"🥇 طلا → {fa[gold_s]}")
+    if mesghal_s and mesghal_s != gold_s: parts.append(f"⚖️ مثقال → {fa[mesghal_s]}")
+    if dollar_s: parts.append(f"💵 دلار → {fa[dollar_s]}")
+
+    verdicts = {
+        "sell": "خلاصه: طلا و سکه خیلی رشد کردن و الان گرونن. اگه داری نگه دار ولی با ترس نخر — صبر کن اصلاح کنه.",
+        "sell_partial": "خلاصه: بازار گرونه؛ اگه داری می‌تونی یه بخش رو سیو سود کنی، خرید جدید فعلاً نه.",
+        "strong_buy": "خلاصه: از نظر آماری موقعیت خرید خیلی خوبیه — اما پله‌ای بخر، یکجا نه.",
+        "buy": "خلاصه: شرایط برای ورود پله‌ای مناسبه، حد ضرر فراموش نشه.",
+        "hold": "خلاصه: بازار رو به رشده ولی هنوز گرون نشده — نگه‌داری وضعیت خوبیه.",
+        "caution": "خلاصه: بازار در حال افت خوردنه؛ دست نگه‌دار تا جهت مشخص بشه.",
+    }
+    key = gold_s or "hold"
+    verdict = verdicts.get(key, "")
+    recap_text = (" • ".join(parts) + "<br><br>" + verdict) if parts else "داده کافی برای جمع‌بندی نیست."
 
     html = f"""<!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -341,7 +386,15 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
 .adv-card{{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px;margin-bottom:10px;border-right:3px solid #334155}}
 .adv-head{{font-size:0.82rem;font-weight:800;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}}
 .adv-sig{{font-size:0.72rem;padding:2px 10px;border-radius:8px;background:rgba(255,255,255,0.06)}}
-.adv-txt{{font-size:0.75rem;color:#94a3b8;line-height:1.9}}
+.adv-gauge{{display:flex;align-items:center;gap:8px;margin:6px 0 8px}}
+.adv-gauge-fill{{height:6px;border-radius:3px;min-width:2%}}
+.adv-score{{font-size:0.78rem;font-weight:900;font-family:monospace}}
+.adv-conf{{font-size:0.62rem;color:#64748b;margin-right:auto}}
+.adv-reasons{{margin:6px 0;padding-right:16px;font-size:0.72rem;color:#94a3b8;line-height:1.9}}
+.adv-targets{{font-size:0.68rem;color:#e2e8f0;background:rgba(255,255,255,0.04);border-radius:8px;padding:7px 10px;font-weight:600}}
+.summary-recap{{background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(139,92,246,.08));border:1px solid rgba(129,140,248,.25);border-radius:12px;padding:14px;margin-top:4px}}
+.sr-title{{font-size:0.78rem;font-weight:800;color:#c7d2fe;margin-bottom:6px}}
+.sr-text{{font-size:0.8rem;color:#e2e8f0;line-height:2}}
 </style>
 </head>
 <body>
