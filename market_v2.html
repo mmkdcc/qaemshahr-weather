@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0e1a">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>تحلیل بازار طلا و دلار</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -71,7 +72,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
   <div class="price-grid">
     <div class="price-card"><div class="pc-icon">💵</div><div class="pc-label">دلار آمریکا</div><div class="pc-value green">189,400</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">🥇</div><div class="pc-label">طلای ۱۸ عیار</div><div class="pc-value gold">19,852,700</div><div class="pc-unit">تومان / گرم</div></div>
-    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">90,670,000</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">90,790,000</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">📊</div><div class="pc-label">روند بازار</div><div class="pc-value orange">صعودی 📈</div><div class="pc-unit">طلا (۷ روزه: +5.6%)</div></div>
   </div>
 </div>
@@ -200,7 +201,13 @@ async function doRefresh(btn) {
         if (r.id > oldId) { runId = r.id; break; }
       }
     }
-    if (!runId) { st.textContent = "⚠️ ران جدید پیدا نشد — یه دقیقه دیگه دستی رفرش کن"; btn.disabled = false; return; }
+    if (!runId) {
+      st.textContent = "⏱️ ران سریع پیدا نشد — ۶۰ ثانیه دیگه خودم چک میکنم";
+      await sleep(60000);
+      st.textContent = "🌍 بارگذاری...";
+      location.reload();
+      return;
+    }
 
     // poll our run to completion (~30-60s)
     let ok = false;

@@ -341,6 +341,7 @@ def main():
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0e1a">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>تحلیل بازار طلا و دلار</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -522,7 +523,13 @@ async function doRefresh(btn) {{
         if (r.id > oldId) {{ runId = r.id; break; }}
       }}
     }}
-    if (!runId) {{ st.textContent = "⚠️ ران جدید پیدا نشد — یه دقیقه دیگه دستی رفرش کن"; btn.disabled = false; return; }}
+    if (!runId) {{
+      st.textContent = "⏱️ ران سریع پیدا نشد — ۶۰ ثانیه دیگه خودم چک میکنم";
+      await sleep(60000);
+      st.textContent = "🌍 بارگذاری...";
+      location.reload();
+      return;
+    }}
 
     // poll our run to completion (~30-60s)
     let ok = false;
