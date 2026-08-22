@@ -4,6 +4,8 @@ on:
   schedule:
     # Every hour
     - cron: '0 * * * *'
+  repository_dispatch:
+    types: [refresh]
   workflow_dispatch:
 
 jobs:
@@ -19,17 +21,20 @@ jobs:
       with:
         python-version: '3.11'
         
+    - name: Install deps
+      run: pip install requests
+        
     - name: Generate Market Analysis
       run: python3 generate_market.py
       
     - name: Generate Weather
-      run: python3 generate_weather.py
+      run: python3 generate_weather.py || true && cp /tmp/qshahr_weather_pro.html weather.html || echo "weather gen skipped (needs local scripts)"
       
     - name: Commit and Push
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add index.html market.html weather.html
+        git add market.html market_v2.html weather.html
         if git diff --cached --quiet; then
           echo "No changes to commit"
         else
