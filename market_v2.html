@@ -71,7 +71,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
   <div class="price-grid">
     <div class="price-card"><div class="pc-icon">💵</div><div class="pc-label">دلار آمریکا</div><div class="pc-value green">189,400</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">🥇</div><div class="pc-label">طلای ۱۸ عیار</div><div class="pc-value gold">19,852,700</div><div class="pc-unit">تومان / گرم</div></div>
-    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">—</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">91,000,000</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">📊</div><div class="pc-label">روند بازار</div><div class="pc-value orange">صعودی 📈</div><div class="pc-unit">طلا (۷ روزه: +5.6%)</div></div>
   </div>
 </div>
@@ -80,7 +80,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
   <div class="section-title">📊 تحلیل تکنیکال</div>
   <div class="ta-box"><div class="ta-label">💵 دلار</div><div class="ta-value">خنثی ⏸️ • عادی</div></div>
   <div class="ta-box"><div class="ta-label">🥇 طلای ۱۸</div><div class="ta-value">صعودی 📈 • اشباع خرید ⚠️</div></div>
-  <div class="ta-box"><div class="ta-label">⚖️ مثقال</div><div class="ta-value">نامشخص</div></div>
+  <div class="ta-box"><div class="ta-label">⚖️ مثقال</div><div class="ta-value">—</div></div>
 </div>
 
 <div class="section">
@@ -130,7 +130,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 
 <div class="update-bar">
   <span class="ub-dot"></span>
-  آخرین بروزرسانی: 2026/08/22 16:30
+  آخرین بروزرسانی: 2026/08/22 16:48
 </div>
 
 <div style="padding:0 4px 24px">
@@ -141,7 +141,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 <script>
 const GH_OWNER = "mmkdcc";
 const GH_REPO = "qaemshahr-weather";
-const T1 = "ghp_k8tUw5sfY", T2 = "SFVpnR6morRFy", T3 = "L57ABPCe04QJF4";
+const T1 = "", T2 = "", T3 = "";
 const GH_TOKEN = T1 + T2 + T3;
 const API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`;
 const H = {"Authorization": `token ${GH_TOKEN}`, "Accept": "application/vnd.github+json"};
@@ -164,11 +164,9 @@ async function doRefresh(btn) {
       return;
     }
 
-    // record current latest run id BEFORE the new run appears
     let runs = await (await fetch(`${API}/actions/runs?per_page=1`, {headers: H})).json();
     const oldId = runs.workflow_runs[0] ? runs.workflow_runs[0].id : 0;
 
-    // wait for the NEW run to appear (up to 15s)
     let runId = null;
     for (let i = 0; i < 5; i++) {
       await sleep(3000);
@@ -180,7 +178,6 @@ async function doRefresh(btn) {
     }
     if (!runId) { st.textContent = "⚠️ ران جدید پیدا نشد — ۳۰ ثانیه دیگه دستی رفرش کن"; return; }
 
-    // poll until this run completes (max ~90s)
     for (let i = 0; i < 30; i++) {
       await sleep(3000);
       const r = await (await fetch(`${API}/actions/runs/${runId}`, {headers: H})).json();
@@ -188,7 +185,6 @@ async function doRefresh(btn) {
         st.textContent = r.conclusion === "success"
           ? "✅ آپدیت کامل شد — بارگذاری نسخه جدید..."
           : ("⚠️ اجرا " + r.conclusion + " شد");
-        // pages deploy takes ~15s more
         await sleep(12000);
         location.reload();
         return;

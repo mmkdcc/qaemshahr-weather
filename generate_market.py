@@ -3,8 +3,8 @@
 Fetches live data from public sources: tgju.org prices/history + news RSS.
 Works on GitHub Actions runners.
 """
-import gzip, json, re, urllib.request, urllib.parse
-from datetime import datetime
+import gzip, json, re, urllib.request, urllib.parse, os
+from datetime import datetime, timezone, timedelta
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126 Safari/537.36")
@@ -22,7 +22,7 @@ def get(url, timeout=15):
 def daily_series(profile):
     """Daily closes from a tgju profile page (chartData), in TOMAN."""
     html = get(f"https://www.tgju.org/profile/{profile}")
-    arrs = re.findall(r'chartData:\s*(\[\[[\s\S]*?\]\])', html)
+    arrs = re.findall(r'chartData:\s*(\[\s*\[[\s\S]*?\]\s*\])', html)
     import collections
     best = None
     for a in arrs:
@@ -34,17 +34,48 @@ def daily_series(profile):
             byday = collections.OrderedDict()
             for p in data:
                 d = datetime.utcfromtimestamp(p[0] / 1000).strftime("%Y-%m-%d")
-                byday[d] = float(p[1]) / 10.0  # rial -> toman
+                byday[d] = float(p[1]) / 10.0
             if len(byday) > (len(best) if best else 0):
                 best = list(byday.items())
-    return best  # [(date, price)] ascending
+    return best
+
+
+def get_mesghal_price():
+    """Get mesghal price: fast.py first (server), then tgju scrape fallback."""
+    import subprocess as sp
+    # 1) fast.py (server only)
+    try:
+        if os.path.exists('/root/scripts/fast.py'):
+            r = sp.run(['python3', '/root/scripts/fast.py', 'gold'],
+                       capture_output=True, text=True, timeout=10)
+            for line in r.stdout.split('\n'):
+                if 'مثقال' in line or 'آبشده' in line:
+                    nums = re.findall(r'[\d,]+', line.split('—')[-1] if '—' in line else line)
+                    big = [int(n.replace(',', '')) for n in nums if len(n.replace(',', '')) >= 6]
+                    if big:
+                        return float(max(big))
+    except Exception:
+        pass
+    # 2) tgju scrape fallback
+    try:
+        req = urllib.request.Request('https://www.tgju.org/profile/mesghal',
+                                     headers={'User-Agent': UA})
+        html = urllib.request.urlopen(req, timeout=15).read().decode('utf-8', 'ignore')
+        m = re.search(r'data-price="(\d+)"', html)
+        if m:
+            return float(m.group(1)) / 10.0
+        m = re.search(r'"close":\s*"?([\d.]+)', html)
+        if m:
+            return float(m.group(1)) / 10.0
+        return None
+    except Exception:
+        return None
+
 
 def ta(series):
-    """Simple TA: SMA20 trend + RSI14 + 7d change."""
     vals = [v for _, v in series]
     cur = vals[-1]
     sma20 = sum(vals[-20:]) / 20 if len(vals) >= 20 else None
-    # RSI14
     rsi = None
     if len(vals) >= 15:
         gains = losses = 0.0
@@ -110,34 +141,23 @@ def iran_news(limit=6):
             pass
     return out
 
-# ---------------------------------------------------------------- forecast
-def forecast(gold, dollar):
-    lines = []
-    if gold.get("rsi") is not None and gold["rsi"] > 70:
-        lines.append(f"🥇 <strong>طلا:</strong> {gold['trend']} — RSI {gold['rsi']:.1f}")
-        lines.append("⚠️ RSI طلا بالای ۷۰ هست (اشباع خرید) — احتمال اصلاح در کوتاه‌مدت وجود داره.")
-    elif gold.get("rsi") is not None:
-        lines.append(f"🥇 <strong>طلا:</strong> {gold['trend']} — RSI {gold['rsi']:.1f}")
-    if dollar.get("rsi") is not None:
-        lines.append(f"💵 <strong>دلار:</strong> {dollar['trend']} — RSI {dollar['rsi']:.1f}")
-        if 30 <= dollar["rsi"] <= 70:
-            lines.append("✅ RSI دلار در محدوده عادی هست — روند پایدار.")
-    return "\n    <br>\n    ".join(lines)
-
 # ---------------------------------------------------------------- main
 def main():
     print("fetching dollar history...", flush=True)
     d_series = daily_series("price_dollar_rl")
     print("fetching gold18 history...", flush=True)
     g_series = daily_series("geram18")
-    print("fetching mesghal history...", flush=True)
-    m_series = daily_series("mesghal")
+    print("fetching mesghal via scrape...", flush=True)
+    mesghal_price = get_mesghal_price()
+    m_series = None
 
     d = ta(d_series) if d_series else {}
     g = ta(g_series) if g_series else {}
-    m = ta(m_series) if m_series else {}
+    if mesghal_price is not None:
+        m = {"current": mesghal_price, "sma20": None, "rsi": None, "trend": "—", "chg7": None, "old7": None}
+    else:
+        m = {}
 
-    from datetime import timezone, timedelta
     _tehran = timezone(timedelta(hours=3, minutes=30))
     now = datetime.now(_tehran).strftime("%Y/%m/%d %H:%M")
     news = iran_news()
@@ -150,15 +170,12 @@ def main():
         for t, w in news
     ) or '<div style="color:#64748b;font-size:0.75rem;text-align:center;padding:12px">اخبار در دسترس نیست</div>'
 
-    # ---- comparison lines ----
     # ---- personal-use refresh trigger config ----
     gh_owner, gh_repo = "mmkdcc", "qaemshahr-weather"
-    import os
-    gh_token = os.environ.get("GITHUB_TOKEN", "")
-
+    gh_token = os.environ.get("GH_REFRESH_TOKEN") or os.environ.get("GITHUB_TOKEN", "")
     _tk = gh_token or ""
     _n = max(len(_tk) // 3, 1)
-    t1, t2, t3 = _tk[:_n], _tk[_n:2 * _n], _tk[2 * _n:]
+    t1, t2, t3 = _tk[:_n], _tk[_n:2*_n], _tk[2*_n:]
 
     def cmp_line(icon, name, data):
         if not data or data.get("old7") is None:
@@ -185,7 +202,7 @@ def main():
             fc_parts.append("✅ RSI دلار در محدوده عادی هست — روند پایدار.")
     fc_html = "\n    <br>\n    ".join(fc_parts)
 
-    # ---- PRO buy/sell advisory: weighted confluence engine (-100..+100) ----
+    # ---- PRO buy/sell advisory ----
     def ema(vals, period=12):
         if len(vals) < period: return None
         k = 2 / (period + 1)
@@ -204,14 +221,12 @@ def main():
         rsi = x["rsi"]; cur = x["current"]; sma20 = x.get("sma20")
         score = 0.0; reasons = []
 
-        # F1: RSI (30)
         if rsi > 75: score -= 30; reasons.append(f"RSI {rsi:.0f} — اشباع خرید شدید")
         elif rsi > 65: score -= 18; reasons.append(f"RSI {rsi:.0f} — نزدیک اشباع خرید")
         elif rsi < 25: score += 30; reasons.append(f"RSI {rsi:.0f} — اشباع فروش شدید")
         elif rsi < 35: score += 18; reasons.append(f"RSI {rsi:.0f} — نزدیک اشباع فروش")
         else: score += 5; reasons.append(f"RSI {rsi:.0f} — نرمال")
 
-        # F2: structure vs SMA20 (25)
         if sma20:
             dist = (cur - sma20) / sma20 * 100
             if dist > 4: score -= 15; reasons.append(f"قیمت {dist:+.1f}% بالای میانگین — کشش بیش‌ازحد")
@@ -219,7 +234,6 @@ def main():
             elif dist > -4: score -= 10; reasons.append("زیر میانگین ۲۰روزه — فشار فروش")
             else: score += 10; reasons.append("افت زیاد زیر میانگین — احتمال بازگشت")
 
-        # F3: momentum EMA12 + ROC (25)
         if vals and len(vals) >= 13:
             e12 = ema(vals, 12)
             if e12:
@@ -232,7 +246,6 @@ def main():
                 elif roc < -8: score += 8; reasons.append(f"افت شدید {roc:.1f}% — احتمال واگرایی مثبت")
                 else: score -= 5; reasons.append(f"مومنتوم ضعیف ({roc:+.1f}%)")
 
-        # F4: weekly volatility (20)
         chg7 = x.get("chg7")
         if chg7 is not None:
             if abs(chg7) > 10: score -= 10; reasons.append(f"نوسان هفتگی خیلی بالا ({chg7:+.1f}%)")
@@ -256,15 +269,13 @@ def main():
 
     def ta_box(icon, name, x):
         if not x:
-            return (f'<div class="ta-box"><div class="ta-label">{icon} {name}</div>'
-                    f'<div class="ta-value">نامشخص</div></div>')
+            return f'<div class="ta-box"><div class="ta-label">{icon} {name}</div><div class="ta-value">نامشخص</div></div>'
         extra = ""
         if x.get("rsi") is not None:
             if x["rsi"] > 70: extra = " • اشباع خرید ⚠️"
             elif x["rsi"] < 30: extra = " • اشباع فروش 🟢"
             else: extra = " • عادی"
-        return (f'<div class="ta-box"><div class="ta-label">{icon} {name}</div>'
-                f'<div class="ta-value">{x["trend"]}{extra}</div></div>')
+        return f'<div class="ta-box"><div class="ta-label">{icon} {name}</div><div class="ta-value">{x["trend"]}{extra}</div></div>'
 
     def advise_html(icon, name, x, vals):
         a = analyze_pro(x, vals)
@@ -288,10 +299,10 @@ def main():
     adv_html = "".join(filter(None, [
         advise_html("💵", "دلار", d, [v for _, v in d_series] if d_series else []),
         advise_html("🥇", "طلای ۱۸", g, [v for _, v in g_series] if g_series else []),
-        advise_html("⚖️", "مثقال", m, [v for _, v in m_series] if m_series else []),
+        advise_html("⚖️", "مثقال", m, []),
     ]))
 
-    # ---- simple plain-language recap (جمع‌بندی ساده) ----
+    # ---- simple plain-language recap ----
     def _sig_word(x, vals):
         a = analyze_pro(x, vals)
         if not a: return None
@@ -306,7 +317,7 @@ def main():
           "sell_partial": "فروش پله‌ای", "sell": "فروش"}
     gold_s = _sig_word(g, [v for _, v in g_series] if g_series else [])
     dollar_s = _sig_word(d, [v for _, v in d_series] if d_series else [])
-    mesghal_s = _sig_word(m, [v for _, v in m_series] if m_series else [])
+    mesghal_s = _sig_word(m, [])
 
     parts = []
     if gold_s: parts.append(f"🥇 طلا → {fa[gold_s]}")
@@ -398,7 +409,7 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
   <div class="price-grid">
     <div class="price-card"><div class="pc-icon">💵</div><div class="pc-label">دلار آمریکا</div><div class="pc-value green">{fmt(d.get('current'))}</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">🥇</div><div class="pc-label">طلای ۱۸ عیار</div><div class="pc-value gold">{fmt(g.get('current'))}</div><div class="pc-unit">تومان / گرم</div></div>
-    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">{fmt(m.get('current'))}</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">{fmt(m.get('current')) if m.get('current') else '—'}</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">📊</div><div class="pc-label">روند بازار</div><div class="pc-value orange">{g.get('trend', '—')}</div><div class="pc-unit">طلا (۷ روزه: {f"{g['chg7']:+.1f}%" if g.get('chg7') is not None else '—'})</div></div>
   </div>
 </div>
@@ -477,11 +488,9 @@ async function doRefresh(btn) {{
       return;
     }}
 
-    // record current latest run id BEFORE the new run appears
     let runs = await (await fetch(`${{API}}/actions/runs?per_page=1`, {{headers: H}})).json();
     const oldId = runs.workflow_runs[0] ? runs.workflow_runs[0].id : 0;
 
-    // wait for the NEW run to appear (up to 15s)
     let runId = null;
     for (let i = 0; i < 5; i++) {{
       await sleep(3000);
@@ -493,7 +502,6 @@ async function doRefresh(btn) {{
     }}
     if (!runId) {{ st.textContent = "⚠️ ران جدید پیدا نشد — ۳۰ ثانیه دیگه دستی رفرش کن"; return; }}
 
-    // poll until this run completes (max ~90s)
     for (let i = 0; i < 30; i++) {{
       await sleep(3000);
       const r = await (await fetch(`${{API}}/actions/runs/${{runId}}`, {{headers: H}})).json();
@@ -501,7 +509,6 @@ async function doRefresh(btn) {{
         st.textContent = r.conclusion === "success"
           ? "✅ آپدیت کامل شد — بارگذاری نسخه جدید..."
           : ("⚠️ اجرا " + r.conclusion + " شد");
-        // pages deploy takes ~15s more
         await sleep(12000);
         location.reload();
         return;
