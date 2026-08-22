@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
     
     steps:
     - name: Checkout
@@ -23,14 +24,13 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: Install deps
-      run: pip install requests
-        
     - name: Generate Market Analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: python3 generate_market.py
       
     - name: Generate Weather
-      run: python3 generate_weather.py || true && cp /tmp/qshahr_weather_pro.html weather.html || echo "weather gen skipped (needs local scripts)"
+      run: python3 generate_weather.py || true && cp /tmp/qshahr_weather_pro.html weather.html || echo "weather gen skipped"
       
     - name: Commit and Push
       run: |
