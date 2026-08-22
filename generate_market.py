@@ -137,7 +137,9 @@ def main():
     g = ta(g_series) if g_series else {}
     m = ta(m_series) if m_series else {}
 
-    now = datetime.now().strftime("%Y/%m/%d %H:%M")
+    from datetime import timezone, timedelta
+    _tehran = timezone(timedelta(hours=3, minutes=30))
+    now = datetime.now(_tehran).strftime("%Y/%m/%d %H:%M")
     news = iran_news()
 
     # ---- news html ----
@@ -173,6 +175,46 @@ def main():
         if 30 <= d["rsi"] <= 70:
             fc_parts.append("✅ RSI دلار در محدوده عادی هست — روند پایدار.")
     fc_html = "\n    <br>\n    ".join(fc_parts)
+
+    # ---- buy/sell advisory (statistical, not financial advice) ----
+    def advise(name, x):
+        if not x or x.get("rsi") is None:
+            return None
+        rsi, trend, chg = x["rsi"], x.get("trend", ""), x.get("chg7")
+        if rsi > 70:
+            sig, cls, txt = "🔴 فروش / صبر", "down", (
+                f"RSI {rsi:.0f} اشباع خریده{f' و {chg:+.1f}٪ هم رشد کرده' if chg else ''}. "
+                "خرید جدید الان ریسک بالایی داره؛ اگه داری می‌تونی بخشی رو سیو سود کنی. "
+                "برای ورود جدید منتظر اصلاح بمون.")
+        elif rsi < 30:
+            sig, cls, txt = "🟢 خرید پلکانی", "up", (
+                f"RSI {rsi:.0f} اشباع فروشه. از نظر آماری منطقه جذاب برای ورود پله‌ایه، "
+                "ولی حتماً با حد ضرر و پله‌های کوچیک.")
+        elif "صعودی" in trend:
+            sig, cls, txt = "🟢 نگه‌داری / خرید در پولبک", "up", (
+                "روند صعودیه و RSI نرماله. دارنده‌ها نگه دارن؛ "
+                "خرید جدید فقط در پولبک به حمایت منطقیه.")
+        elif "نزولی" in trend:
+            sig, cls, txt = "🟡 احتیاط", "", (
+                "روند نزولیه. ورود جدید توصیه نمیشه تا نشونه‌های برگشت (کف‌های بالاتر + RSI بالای ۴۰) ببینیم.")
+        else:
+            sig, cls, txt = "⚪ بی‌طرف", "", "بازار خنثیه — معامله‌گری کم‌ریسک یا انتظار برای شکست محدوده."
+        return sig, cls, txt
+
+    def advise_html(icon, name, x):
+        a = advise(name, x)
+        if a is None:
+            return ""
+        sig, cls, txt = a
+        return (f'<div class="adv-card">'
+                f'<div class="adv-head">{icon} {name} <span class="{cls} adv-sig">{sig}</span></div>'
+                f'<div class="adv-txt">{txt}</div></div>')
+
+    adv_html = "".join(filter(None, [
+        advise_html("💵", "دلار", d),
+        advise_html("🥇", "طلای ۱۸", g),
+        advise_html("⚖️", "مثقال", m),
+    ]))
 
     # ---- TA boxes ----
     def ta_box(icon, name, x):
@@ -259,6 +301,10 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
 .refresh-btn:hover{{box-shadow:0 8px 28px rgba(99,102,241,0.35)}}
 .refresh-btn:disabled{{opacity:.55;cursor:wait}}
 #refresh-status{{text-align:center;font-size:0.7rem;color:#64748b;margin-top:8px;min-height:1em}}
+.adv-card{{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px;margin-bottom:10px;border-right:3px solid #334155}}
+.adv-head{{font-size:0.82rem;font-weight:800;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}}
+.adv-sig{{font-size:0.72rem;padding:2px 10px;border-radius:8px;background:rgba(255,255,255,0.06)}}
+.adv-txt{{font-size:0.75rem;color:#94a3b8;line-height:1.9}}
 </style>
 </head>
 <body>
@@ -309,6 +355,13 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
   </div>
 </div>
 
+<div class="section">
+  <div class="section-title">💼 مشاوره خرید و فروش</div>
+  <div style="font-size:0.62rem;color:#64748b;margin:-8px 0 10px">بر اساس RSI + روند + تغییرات هفتگی — آماری، نه نصیحت مالی</div>
+  {adv_html}
+  <div class="warn">⚠️ حد ضرر یادت نره — هیچ سیگنالی ۱۰۰٪ نیست.</div>
+</div>
+
 <div class="update-bar">
   <span class="ub-dot"></span>
   آخرین بروزرسانی: {now}
@@ -342,8 +395,8 @@ async function doRefresh(btn) {{
       }}
     );
     if (res.status === 204 || res.status === 0) {{
-      st.textContent = "✅ آپدیت اجرا شد — تا ~۴۵ ثانیه دیگه خودم رفرش میکنم";
-      setTimeout(() => location.reload(), 45000);
+      st.textContent = "✅ آپدیت اجرا شد — تا ~۳۵ ثانیه دیگه خودم رفرش میکنم";
+      setTimeout(() => location.reload(), 35000);
     }} else {{
       st.textContent = "⚠️ خطا " + res.status + " — دوباره تلاش کن";
       btn.disabled = false;

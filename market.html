@@ -41,6 +41,10 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 .refresh-btn:hover{box-shadow:0 8px 28px rgba(99,102,241,0.35)}
 .refresh-btn:disabled{opacity:.55;cursor:wait}
 #refresh-status{text-align:center;font-size:0.7rem;color:#64748b;margin-top:8px;min-height:1em}
+.adv-card{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px;margin-bottom:10px;border-right:3px solid #334155}
+.adv-head{font-size:0.82rem;font-weight:800;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.adv-sig{font-size:0.72rem;padding:2px 10px;border-radius:8px;background:rgba(255,255,255,0.06)}
+.adv-txt{font-size:0.75rem;color:#94a3b8;line-height:1.9}
 </style>
 </head>
 <body>
@@ -73,12 +77,12 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 
 <div class="section">
   <div class="section-title">📰 آخرین اخبار بازار</div>
-  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">خطیب‌زاده: اعمال‌کنندگان تحریم‌ها به زباله‌دان تاریخ خواهند پیوست</div><div class="ni-desc">2026-08-22 09:39</div></div></div>
+  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">تعطیلی گسترده آژانس‌های مسافرتی ایران در پی جنگ و بحران اقتصادی</div><div class="ni-desc">2026-08-22 10:19</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">الحصار الأميركي يخنق النفط الإيراني.. الصادرات تهوي إلى سُبع مستويات ما قبل الحرب</div><div class="ni-desc">2026-08-22 10:18</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">خطیب‌زاده: اعمال‌کنندگان تحریم‌ها به زباله‌دان تاریخ خواهند پیوست</div><div class="ni-desc">2026-08-22 09:39</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">الاستراتيجية الأميركية.. والحرب الاقتصادية.. و&quot;البندقية الفارغة&quot;.. والانقسام الداخلي</div><div class="ni-desc">2026-08-22 09:54</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">عطا حسینیان: جمهوری اسلامی برای جبران کمبود منابع مالی به سراغ افزایش قیمت بنزین می‌رود</div><div class="ni-desc">2026-08-22 09:21</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">نظام وظیفه اطلاعیه داد؛ بیرانوند نمی‌تواند در تراکتور بماند و باید به یک تیم نظامی برود</div><div class="ni-desc">2026-08-22 09:19</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">رییس‌جمهوری عراق: برای برخی نفتکش‌های عراق در تنگه هرمز تسهیلاتی فراهم شده است</div><div class="ni-desc">2026-08-22 08:36</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">مقام‌های نظامی کویت و آمریکا در پنتاگون درباره همکاری‌های دفاعی گفت‌وگو کردند</div><div class="ni-desc">2026-08-22 08:20</div></div></div>
 
 </div>
 
@@ -105,9 +109,16 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
   </div>
 </div>
 
+<div class="section">
+  <div class="section-title">💼 مشاوره خرید و فروش</div>
+  <div style="font-size:0.62rem;color:#64748b;margin:-8px 0 10px">بر اساس RSI + روند + تغییرات هفتگی — آماری، نه نصیحت مالی</div>
+  <div class="adv-card"><div class="adv-head">💵 دلار <span class=" adv-sig">⚪ بی‌طرف</span></div><div class="adv-txt">بازار خنثیه — معامله‌گری کم‌ریسک یا انتظار برای شکست محدوده.</div></div><div class="adv-card"><div class="adv-head">🥇 طلای ۱۸ <span class="down adv-sig">🔴 فروش / صبر</span></div><div class="adv-txt">RSI 76 اشباع خریده و +5.6٪ هم رشد کرده. خرید جدید الان ریسک بالایی داره؛ اگه داری می‌تونی بخشی رو سیو سود کنی. برای ورود جدید منتظر اصلاح بمون.</div></div><div class="adv-card"><div class="adv-head">⚖️ مثقال <span class="down adv-sig">🔴 فروش / صبر</span></div><div class="adv-txt">RSI 76 اشباع خریده و +5.6٪ هم رشد کرده. خرید جدید الان ریسک بالایی داره؛ اگه داری می‌تونی بخشی رو سیو سود کنی. برای ورود جدید منتظر اصلاح بمون.</div></div>
+  <div class="warn">⚠️ حد ضرر یادت نره — هیچ سیگنالی ۱۰۰٪ نیست.</div>
+</div>
+
 <div class="update-bar">
   <span class="ub-dot"></span>
-  آخرین بروزرسانی: 2026/08/22 10:40
+  آخرین بروزرسانی: 2026/08/22 14:17
 </div>
 
 <div style="padding:0 4px 24px">
@@ -118,7 +129,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 <script>
 const GH_OWNER = "mmkdcc";
 const GH_REPO = "qaemshahr-weather";
-const T1 = "", T2 = "", T3 = "";
+const T1 = "ghp_qNPs3USjU", T2 = "9DvYdvGLrTE7m", T3 = "3siO2GuM3XUpnt";
 const GH_TOKEN = T1 + T2 + T3;
 
 async function doRefresh(btn) {
@@ -138,8 +149,8 @@ async function doRefresh(btn) {
       }
     );
     if (res.status === 204 || res.status === 0) {
-      st.textContent = "✅ آپدیت اجرا شد — تا ~۴۵ ثانیه دیگه خودم رفرش میکنم";
-      setTimeout(() => location.reload(), 45000);
+      st.textContent = "✅ آپدیت اجرا شد — تا ~۳۵ ثانیه دیگه خودم رفرش میکنم";
+      setTimeout(() => location.reload(), 35000);
     } else {
       st.textContent = "⚠️ خطا " + res.status + " — دوباره تلاش کن";
       btn.disabled = false;
