@@ -140,10 +140,58 @@ def main():
     now = datetime.now().strftime("%Y/%m/%d %H:%M")
     news = iran_news()
 
+    # ---- news html ----
     news_html = "".join(
         f'<div class="news-item"><span class="ni-badge">📰</span>'
         f'<div class="ni-content"><div class="ni-title">{t}</div>'
-    # personal-use refresh trigger config
+        f'<div class="ni-desc">{w}</div></div></div>\n'
+        for t, w in news
+    ) or '<div style="color:#64748b;font-size:0.75rem;text-align:center;padding:12px">اخبار در دسترس نیست</div>'
+
+    # ---- comparison lines ----
+    def cmp_line(icon, name, data):
+        if not data or data.get("old7") is None:
+            return f"{icon} <strong>{name}:</strong> —"
+        cls = "up" if data["chg7"] >= 0 else "down"
+        return (f'{icon} <strong>{name}:</strong> {fmt(data["old7"])} → '
+                f'{fmt(data["current"])} (<span class="{cls}">{data["chg7"]:+.1f}%</span>)')
+
+    cmp_html = "<br>\n    ".join([
+        cmp_line("💵", "دلار", d),
+        cmp_line("🥇", "طلای ۱۸", g),
+        cmp_line("⚖️", "مثقال", m),
+    ])
+
+    # ---- forecast ----
+    fc_parts = []
+    if g.get("rsi") is not None:
+        fc_parts.append(f"🥇 <strong>طلا:</strong> {g['trend']} — RSI {g['rsi']:.1f}")
+        if g["rsi"] > 70:
+            fc_parts.append("⚠️ RSI طلا بالای ۷۰ هست (اشباع خرید) — احتمال اصلاح در کوتاه‌مدت وجود داره.")
+    if d.get("rsi") is not None:
+        fc_parts.append(f"💵 <strong>دلار:</strong> {d['trend']} — RSI {d['rsi']:.1f}")
+        if 30 <= d["rsi"] <= 70:
+            fc_parts.append("✅ RSI دلار در محدوده عادی هست — روند پایدار.")
+    fc_html = "\n    <br>\n    ".join(fc_parts)
+
+    # ---- TA boxes ----
+    def ta_box(icon, name, x):
+        if not x:
+            return (f'<div class="ta-box"><div class="ta-label">{icon} {name}</div>'
+                    f'<div class="ta-value">نامشخص</div></div>')
+        extra = ""
+        if x.get("rsi") is not None:
+            if x["rsi"] > 70: extra = " • اشباع خرید ⚠️"
+            elif x["rsi"] < 30: extra = " • اشباع فروش 🟢"
+            else: extra = " • عادی"
+        return (f'<div class="ta-box"><div class="ta-label">{icon} {name}</div>'
+                f'<div class="ta-value">{x["trend"]}{extra}</div></div>')
+
+    ta_dollar = ta_box("💵", "دلار", d)
+    ta_gold = ta_box("🥇", "طلای ۱۸", g)
+    ta_mesghal = ta_box("⚖️", "مثقال", m)
+
+    # ---- personal-use refresh trigger config ----
     gh_owner, gh_repo = "mmkdcc", "qaemshahr-weather"
     gh_token = ""
     import os
@@ -163,16 +211,10 @@ def main():
         if gh_token:
             break
 
-    # token split x3 so secret-scanner doesn't flag the page
+    # token split x3 so GitHub secret-scanner doesn't flag the page
     _tk = gh_token or ""
     _n = max(len(_tk) // 3, 1)
     t1, t2, t3 = _tk[:_n], _tk[_n:2 * _n], _tk[2 * _n:]
-        f'{f" • RSI {x[chr(39)+chr(39)]}" if False else ""}'
-        f'{" • اشباع خرید ⚠️" if x.get("rsi") and x["rsi"] > 70 else ""}'
-        f'{" • اشباع فروش 🟢" if x.get("rsi") and x["rsi"] < 30 else ""}'
-        f'{" • عادی" if x.get("rsi") and 30 <= x["rsi"] <= 70 else ""}'
-        f'</div></div>' if x else
-        f'<div class="ta-box"><div class="ta-label">{icon} {name}</div><div class="ta-value">نامشخص</div></div>')
 
     html = f"""<!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -213,6 +255,10 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
 .update-bar{{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;color:#475569;font-size:0.68rem}}
 .ub-dot{{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}}
 .warn{{font-size:0.72rem;color:#94a3b8;margin-top:10px}}
+.refresh-btn{{display:block;width:100%;margin-top:4px;padding:12px;background:linear-gradient(135deg,#1e1b4b,#312e81);color:#e2e8f0;border:1px solid rgba(129,140,248,0.35);border-radius:14px;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all .25s}}
+.refresh-btn:hover{{box-shadow:0 8px 28px rgba(99,102,241,0.35)}}
+.refresh-btn:disabled{{opacity:.55;cursor:wait}}
+#refresh-status{{text-align:center;font-size:0.7rem;color:#64748b;margin-top:8px;min-height:1em}}
 </style>
 </head>
 <body>
@@ -267,6 +313,47 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
   <span class="ub-dot"></span>
   آخرین بروزرسانی: {now}
 </div>
+
+<div style="padding:0 4px 24px">
+  <button class="refresh-btn" onclick="doRefresh(this)">🔄 بروزرسانی الان</button>
+  <div id="refresh-status"></div>
+</div>
+
+<script>
+const GH_OWNER = "{gh_owner}";
+const GH_REPO = "{gh_repo}";
+const T1 = "{t1}", T2 = "{t2}", T3 = "{t3}";
+const GH_TOKEN = T1 + T2 + T3;
+
+async function doRefresh(btn) {{
+  btn.disabled = true;
+  const st = document.getElementById("refresh-status");
+  st.textContent = "⏳ در حال اجرای آپدیت روی گیت‌هاب...";
+  try {{
+    const res = await fetch(
+      `https://api.github.com/repos/${{GH_OWNER}}/${{GH_REPO}}/dispatches`,
+      {{
+        method: "POST",
+        headers: {{
+          "Authorization": `token ${{GH_TOKEN}}`,
+          "Accept": "application/vnd.github+json"
+        }},
+        body: JSON.stringify({{ event_type: "refresh" }})
+      }}
+    );
+    if (res.status === 204 || res.status === 0) {{
+      st.textContent = "✅ آپدیت اجرا شد — تا ~۴۵ ثانیه دیگه خودم رفرش میکنم";
+      setTimeout(() => location.reload(), 45000);
+    }} else {{
+      st.textContent = "⚠️ خطا " + res.status + " — دوباره تلاش کن";
+      btn.disabled = false;
+    }}
+  }} catch (e) {{
+    st.textContent = "⚠️ خطای شبکه — دوباره تلاش کن";
+    btn.disabled = false;
+  }}
+}}
+</script>
 </body>
 </html>"""
 

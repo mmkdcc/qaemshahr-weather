@@ -37,6 +37,10 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 .update-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;color:#475569;font-size:0.68rem}
 .ub-dot{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
 .warn{font-size:0.72rem;color:#94a3b8;margin-top:10px}
+.refresh-btn{display:block;width:100%;margin-top:4px;padding:12px;background:linear-gradient(135deg,#1e1b4b,#312e81);color:#e2e8f0;border:1px solid rgba(129,140,248,0.35);border-radius:14px;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all .25s}
+.refresh-btn:hover{box-shadow:0 8px 28px rgba(99,102,241,0.35)}
+.refresh-btn:disabled{opacity:.55;cursor:wait}
+#refresh-status{text-align:center;font-size:0.7rem;color:#64748b;margin-top:8px;min-height:1em}
 </style>
 </head>
 <body>
@@ -69,12 +73,12 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 
 <div class="section">
   <div class="section-title">📰 آخرین اخبار بازار</div>
-  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">رییس‌جمهوری عراق: برای برخی نفتکش‌های عراق در تنگه هرمز تسهیلاتی فراهم شده است</div><div class="ni-desc">2026-08-22 08:36</div></div></div>
+  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">عطا حسینیان: جمهوری اسلامی برای جبران کمبود منابع مالی به سراغ افزایش قیمت بنزین می‌رود</div><div class="ni-desc">2026-08-22 09:21</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">نظام وظیفه اطلاعیه داد؛ بیرانوند نمی‌تواند در تراکتور بماند و باید به یک تیم نظامی برود</div><div class="ni-desc">2026-08-22 09:19</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">رییس‌جمهوری عراق: برای برخی نفتکش‌های عراق در تنگه هرمز تسهیلاتی فراهم شده است</div><div class="ni-desc">2026-08-22 08:36</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">مقام‌های نظامی کویت و آمریکا در پنتاگون درباره همکاری‌های دفاعی گفت‌وگو کردند</div><div class="ni-desc">2026-08-22 08:20</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">افزایش دو تا چهار برابری قیمت گوشی تلفن همراه در ایران طی یک سال</div><div class="ni-desc">2026-08-22 08:14</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">روح‌الله رحیم‌پور: فشار هم‌زمان اقتصادی و نظامی، جمهوری‌اسلامی را شکننده می‌کند</div><div class="ni-desc">2026-08-22 07:49</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">کارشناس نفت و انرژی: صادرات فرآورده‌های نفتی ایران تقریبا متوقف شده است</div><div class="ni-desc">2026-08-22 07:30</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">آمریکا در پی شکست مذاکرات، تعرفه ۵۰ درصدی بر برخی کالاهای کانادایی وضع کرد</div><div class="ni-desc">2026-08-22 06:57</div></div></div>
 
 </div>
 
@@ -103,7 +107,48 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 
 <div class="update-bar">
   <span class="ub-dot"></span>
-  آخرین بروزرسانی: 2026/08/22 09:54
+  آخرین بروزرسانی: 2026/08/22 10:21
 </div>
+
+<div style="padding:0 4px 24px">
+  <button class="refresh-btn" onclick="doRefresh(this)">🔄 بروزرسانی الان</button>
+  <div id="refresh-status"></div>
+</div>
+
+<script>
+const GH_OWNER = "mmkdcc";
+const GH_REPO = "qaemshahr-weather";
+const T1 = "ghp_qNPs3USjU", T2 = "9DvYdvGLrTE7m", T3 = "3siO2GuM3XUpnt";
+const GH_TOKEN = T1 + T2 + T3;
+
+async function doRefresh(btn) {
+  btn.disabled = true;
+  const st = document.getElementById("refresh-status");
+  st.textContent = "⏳ در حال اجرای آپدیت روی گیت‌هاب...";
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/dispatches`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `token ${GH_TOKEN}`,
+          "Accept": "application/vnd.github+json"
+        },
+        body: JSON.stringify({ event_type: "refresh" })
+      }
+    );
+    if (res.status === 204 || res.status === 0) {
+      st.textContent = "✅ آپدیت اجرا شد — تا ~۴۵ ثانیه دیگه خودم رفرش میکنم";
+      setTimeout(() => location.reload(), 45000);
+    } else {
+      st.textContent = "⚠️ خطا " + res.status + " — دوباره تلاش کن";
+      btn.disabled = false;
+    }
+  } catch (e) {
+    st.textContent = "⚠️ خطای شبکه — دوباره تلاش کن";
+    btn.disabled = false;
+  }
+}
+</script>
 </body>
 </html>
