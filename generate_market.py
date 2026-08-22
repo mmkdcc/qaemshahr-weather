@@ -216,6 +216,43 @@ def main():
         advise_html("⚖️", "مثقال", m),
     ]))
 
+    # ---- simple plain-language recap (جمع‌بندی ساده) ----
+    def _sig_word(x):
+        if not x or x.get("rsi") is None:
+            return None
+        if x["rsi"] > 70: return "sell"
+        if x["rsi"] < 30: return "buy"
+        if "صعودی" in x.get("trend", ""): return "hold"
+        if "نزولی" in x.get("trend", ""): return "caution"
+        return "neutral"
+
+    sigs = {"dollar": _sig_word(d), "gold": _sig_word(g), "mesghal": _sig_word(m)}
+    fa = {"sell": "فروش/صبر", "buy": "خرید", "hold": "نگه‌داری",
+          "caution": "احتیاط", "neutral": "استراحت"}
+    
+    gold_s, dollar_s = sigs["gold"], sigs["dollar"]
+    
+    parts = []
+    parts.append(f"🥇 طلا: {fa[gold_s]}")
+    if sigs["mesghal"] and sigs["mesghal"] != gold_s:
+        parts.append(f"⚖️ مثقال: {fa[sigs['mesghal']]}")
+    parts.append(f"💵 دلار: {fa[dollar_s]}")
+    
+    # overall verdict
+    if gold_s == "sell":
+        verdict = ("خلاصه: طلا و سکه رشد زیادی کردن و الان گرونن. اگه داری نگه‌شون دار، "
+                   "ولی با ترس خرید نکن — صبر کن اصلاح کنه. دلار آروم حرکت میکنه و خبر خاصی نیست.")
+    elif gold_s == "buy":
+        verdict = "خلاصه: قیمت‌ها افت زیاد کردن و از نظر آماری منطقه خریبه — پله‌ای بخر، یکجا نه."
+    elif gold_s == "hold":
+        verdict = "خلاصه: بازار رو به رشده ولی هنوز گرون نشده. وضعیت خوبیه برای نگه‌داری."
+    elif gold_s == "caution":
+        verdict = "خلاصه: بازار در حال افتخورده. فعلاً دست نگه‌دار تا جهت مشخص بشه."
+    else:
+        verdict = "خلاصه: بازار ساکنه — معامله خاصی لازم نیست، استراحت بهترین کاره."
+    
+    recap_text = " • ".join(parts) + "<br><br>" + verdict
+    
     # ---- TA boxes ----
     def ta_box(icon, name, x):
         if not x:
@@ -359,7 +396,11 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
   <div class="section-title">💼 مشاوره خرید و فروش</div>
   <div style="font-size:0.62rem;color:#64748b;margin:-8px 0 10px">بر اساس RSI + روند + تغییرات هفتگی — آماری، نه نصیحت مالی</div>
   {adv_html}
-  <div class="warn">⚠️ حد ضرر یادت نره — هیچ سیگنالی ۱۰۰٪ نیست.</div>
+  <div class="summary-recap">
+    <div class="sr-title">📌 جمع‌بندی ساده</div>
+    <div class="sr-text">{recap_text}</div>
+  </div>
+  <div class="warn">⚠️ حد ضرر یادت نره — هیچ سیگنالی ۱۰۰٪ نیست. این تحلیل آماریه و نصیحت مالی نیست.</div>
 </div>
 
 <div class="update-bar">
