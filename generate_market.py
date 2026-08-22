@@ -470,9 +470,24 @@ const H = {{"Authorization": `token ${{GH_TOKEN}}`, "Accept": "application/vnd.g
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// timestamp shown on THIS page — we wait until the live page shows a NEWER one
+const MY_TS = (() => {{
+  const el = document.querySelector(".update-bar");
+  return el ? el.textContent.replace(/[^\d/: ]/g, "").trim() : "";
+}})();
+
+async function livePageTimestamp() {{
+  const bust = "?t=" + Date.now();
+  const res = await fetch("market.html" + bust, {{cache: "no-store"}});
+  const html = await res.text();
+  const m = html.match(/آخرین بروزرسانی:\s*([\d/: ]+)/);
+  return m ? m[1].trim() : "";
+}}
+
 async function doRefresh(btn) {{
   btn.disabled = true;
   const st = document.getElementById("refresh-status");
+  const clickUTC = new Date().toISOString();
 
   try {{
     if (!GH_TOKEN) {{
@@ -486,43 +501,56 @@ async function doRefresh(btn) {{
       body: JSON.stringify({{ event_type: "refresh" }})
     }});
     if (res.status !== 204 && res.status !== 0) {{
-      st.textContent = res.status === 401 ? "❌ توکن منقضی شده — به هرمس بگو توکن نو بده"
-                                          : ("⚠️ خطا " + res.status);
+      st.textContent = res.status === 401
+        ? "❌ توکن منقضی شده — به هرمس بگو توکن نو بده"
+        : ("⚠️ خطا " + res.status);
       btn.disabled = false;
       return;
     }}
 
-    let runs = await (await fetch(`${{API}}/actions/runs?per_page=1`, {{headers: H}})).json();
-    const oldId = runs.workflow_runs[0] ? runs.workflow_runs[0].id : 0;
-
+    // find OUR new repository_dispatch run (created after click)
     let runId = null;
-    for (let i = 0; i < 6; i++) {{
+    for (let i = 0; i < 8 && !runId; i++) {{
       await sleep(2500);
-      runs = await (await fetch(`${{API}}/actions/runs?per_page=1`, {{headers: H}})).json();
-      if (runs.workflow_runs[0] && runs.workflow_runs[0].id > oldId) {{
-        runId = runs.workflow_runs[0].id;
-        break;
+      const runs = await (await fetch(
+        `${{API}}/actions/runs?event=repository_dispatch&per_page=3`, {{headers: H}})).json();
+      for (const r of (runs.workflow_runs || [])) {{
+        if (new Date(r.created_at) >= new Date(clickUTC)) {{ runId = r.id; break; }}
       }}
     }}
-    if (!runId) {{ st.textContent = "⚠️ ران جدید پیدا نشد — یه دقیقه دیگه دستی رفرش کن"; return; }}
+    if (!runId) {{ st.textContent = "⚠️ ران جدید پیدا نشد — یه دقیقه دیگه دستی رفرش کن"; btn.disabled = false; return; }}
 
-    for (let i = 0; i < 30; i++) {{
+    // poll our run to completion (~30-60s)
+    let ok = false;
+    for (let i = 0; i < 25; i++) {{
       await sleep(3000);
       const r = await (await fetch(`${{API}}/actions/runs/${{runId}}`, {{headers: H}})).json();
       if (r.status === "completed") {{
-        if (r.conclusion !== "success") {{
-          st.textContent = "⚠️ اجرا " + r.conclusion + " شد";
-          btn.disabled = false;
+        ok = r.conclusion === "success";
+        st.textContent = ok ? "✅ داده‌ها ساخته شد — منتظر انتشار..."
+                            : ("⚠️ اجرا " + r.conclusion + " شد");
+        break;
+      }}
+      st.textContent = `🔄 ساخت نسخه جدید... ${{(i+1)*3}} ثانیه`;
+    }}
+    if (!ok) {{ btn.disabled = false; return; }}
+
+    // pages deploy: poll the LIVE page until ITS timestamp is newer than ours
+    st.textContent = "🌍 منتظر انتشار روی سایت...";
+    for (let i = 0; i < 40; i++) {{   // up to ~4 min
+      await sleep(6000);
+      try {{
+        const ts = await livePageTimestamp();
+        if (ts && MY_TS && ts > MY_TS) {{
+          st.textContent = "✅ آپدیت کامل شد — بارگذاری...";
+          location.reload();
           return;
         }}
-        st.textContent = "✅ آپدیت کامل شد — بارگذاری...";
-        await sleep(12000);
-        location.reload();
-        return;
-      }}
-      st.textContent = `🔄 در حال بروزرسانی... ${{(i+1)*3}} ثانیه`;
+      }} catch (e) {{ /* retry */ }}
+      st.textContent = `🌍 منتظر انتشار... ${{(i+1)*6}} ثانیه`;
     }}
-    st.textContent = "⏱️ طول کشید — چند لحظه دیگه دستی رفرش کن";
+    st.textContent = "⏱️ طول کشید — دستی رفرش کن";
+    btn.disabled = false;
   }} catch (e) {{
     st.textContent = "⚠️ خطای شبکه — دوباره تلاش کن";
     btn.disabled = false;
