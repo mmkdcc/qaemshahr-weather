@@ -166,13 +166,6 @@ def main():
         for t, w in news
     ) or '<div style="color:#64748b;font-size:0.75rem;text-align:center;padding:12px">اخبار در دسترس نیست</div>'
 
-    # ---- personal-use refresh trigger config ----
-    gh_owner, gh_repo = "mmkdcc", "qaemshahr-weather"
-    gh_token = os.environ.get("GH_REFRESH_TOKEN") or os.environ.get("GITHUB_TOKEN", "")
-    _tk = gh_token or ""
-    _n = max(len(_tk) // 3, 1)
-    t1, t2, t3 = _tk[:_n], _tk[_n:2*_n], _tk[2*_n:]
-
     def cmp_line(icon, name, data):
         if not data or data.get("old7") is None:
             return f"{icon} <strong>{name}:</strong> —"
@@ -453,34 +446,6 @@ body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height
   آخرین بروزرسانی: {now}
 </div>
 
-<div style="padding:0 4px 24px">
-  <button class="refresh-btn" onclick="doRefresh(this)">🔄 بروزرسانی الان</button>
-  <div id="refresh-status"></div>
-</div>
-
-<script>
-// Refresh via owner's server webhook (token stays server-side)
-const WEBHOOK = "http://31.58.78.166:8790/refresh";
-
-async function doRefresh(btn) {{
-  btn.disabled = true;
-  const st = document.getElementById("refresh-status");
-  st.textContent = "⏳ درخواست آپدیت...";
-  try {{
-    const res = await fetch(WEBHOOK, {{mode: "cors"}});
-    if (res.ok) {{
-      st.textContent = "✅ آپدیت اجرا شد — تا ~۴۵ ثانیه دیگه رفرش میکنم";
-      setTimeout(() => location.reload(), 45000);
-    }} else {{
-      st.textContent = "⚠️ خطا " + res.status;
-      btn.disabled = false;
-    }}
-  }} catch (e) {{
-    st.textContent = "⚠️ سرور در دسترس نیست — دوباره تلاش کن";
-    btn.disabled = false;
-  }}
-}}
-</script>
 </body>
 </html>"""
 

@@ -71,7 +71,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
   <div class="price-grid">
     <div class="price-card"><div class="pc-icon">💵</div><div class="pc-label">دلار آمریکا</div><div class="pc-value green">189,400</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">🥇</div><div class="pc-label">طلای ۱۸ عیار</div><div class="pc-value gold">19,852,700</div><div class="pc-unit">تومان / گرم</div></div>
-    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">90,780,000</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">90,800,000</div><div class="pc-unit">تومان</div></div>
     <div class="price-card"><div class="pc-icon">📊</div><div class="pc-label">روند بازار</div><div class="pc-value orange">صعودی 📈</div><div class="pc-unit">طلا (۷ روزه: +5.6%)</div></div>
   </div>
 </div>
@@ -80,7 +80,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
   <div class="section-title">📊 تحلیل تکنیکال</div>
   <div class="ta-box"><div class="ta-label">💵 دلار</div><div class="ta-value">خنثی ⏸️ • عادی</div></div>
   <div class="ta-box"><div class="ta-label">🥇 طلای ۱۸</div><div class="ta-value">صعودی 📈 • اشباع خرید ⚠️</div></div>
-  <div class="ta-box"><div class="ta-label">⚖️ مثقال</div><div class="ta-value">نامشخص</div></div>
+  <div class="ta-box"><div class="ta-label">⚖️ مثقال</div><div class="ta-value">—</div></div>
 </div>
 
 <div class="section">
@@ -130,36 +130,8 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 
 <div class="update-bar">
   <span class="ub-dot"></span>
-  آخرین بروزرسانی: 2026/08/22 17:12
+  آخرین بروزرسانی: 2026/08/22 17:21
 </div>
 
-<div style="padding:0 4px 24px">
-  <button class="refresh-btn" onclick="doRefresh(this)">🔄 بروزرسانی الان</button>
-  <div id="refresh-status"></div>
-</div>
-
-<script>
-// Refresh via owner's server webhook (token stays server-side)
-const WEBHOOK = "http://31.58.78.166:8790/refresh";
-
-async function doRefresh(btn) {
-  btn.disabled = true;
-  const st = document.getElementById("refresh-status");
-  st.textContent = "⏳ درخواست آپدیت...";
-  try {
-    const res = await fetch(WEBHOOK, {mode: "cors"});
-    if (res.ok) {
-      st.textContent = "✅ آپدیت اجرا شد — تا ~۴۵ ثانیه دیگه رفرش میکنم";
-      setTimeout(() => location.reload(), 45000);
-    } else {
-      st.textContent = "⚠️ خطا " + res.status;
-      btn.disabled = false;
-    }
-  } catch (e) {
-    st.textContent = "⚠️ سرور در دسترس نیست — دوباره تلاش کن";
-    btn.disabled = false;
-  }
-}
-</script>
 </body>
 </html>
