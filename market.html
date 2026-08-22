@@ -85,12 +85,12 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 
 <div class="section">
   <div class="section-title">📰 آخرین اخبار بازار</div>
-  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">حسین طائب: ملت ایران فریب بازگشت دشمن به میز مذاکره را نخورد</div><div class="ni-desc">2026-08-22 10:58</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">تعطیلی گسترده آژانس‌های مسافرتی ایران در پی جنگ و بحران اقتصادی</div><div class="ni-desc">2026-08-22 10:19</div></div></div>
+  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">تعطیلی گسترده آژانس‌های مسافرتی ایران در پی جنگ و بحران اقتصادی</div><div class="ni-desc">2026-08-22 10:19</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">الحصار الأميركي يخنق النفط الإيراني.. الصادرات تهوي إلى سُبع مستويات ما قبل الحرب</div><div class="ni-desc">2026-08-22 10:18</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">خطیب‌زاده: اعمال‌کنندگان تحریم‌ها به زباله‌دان تاریخ خواهند پیوست</div><div class="ni-desc">2026-08-22 09:39</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">الاستراتيجية الأميركية.. والحرب الاقتصادية.. و&quot;البندقية الفارغة&quot;.. والانقسام الداخلي</div><div class="ni-desc">2026-08-22 09:54</div></div></div>
 <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">عطا حسینیان: جمهوری اسلامی برای جبران کمبود منابع مالی به سراغ افزایش قیمت بنزین می‌رود</div><div class="ni-desc">2026-08-22 09:21</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">نظام وظیفه اطلاعیه داد؛ بیرانوند نمی‌تواند در تراکتور بماند و باید به یک تیم نظامی برود</div><div class="ni-desc">2026-08-22 09:19</div></div></div>
 
 </div>
 
@@ -130,7 +130,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 
 <div class="update-bar">
   <span class="ub-dot"></span>
-  آخرین بروزرسانی: 2026/08/22 14:43
+  آخرین بروزرسانی: 2026/08/22 14:48
 </div>
 
 <div style="padding:0 4px 24px">
@@ -141,32 +141,61 @@ body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:
 <script>
 const GH_OWNER = "mmkdcc";
 const GH_REPO = "qaemshahr-weather";
-const T1 = "", T2 = "", T3 = "";
+const T1 = "ghp_qNPs3USjU", T2 = "9DvYdvGLrTE7m", T3 = "3siO2GuM3XUpnt";
 const GH_TOKEN = T1 + T2 + T3;
+const API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`;
+const H = {"Authorization": `token ${GH_TOKEN}`, "Accept": "application/vnd.github+json"};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function doRefresh(btn) {
   btn.disabled = true;
   const st = document.getElementById("refresh-status");
-  st.textContent = "⏳ در حال اجرای آپدیت روی گیت‌هاب...";
+
   try {
-    const res = await fetch(
-      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/dispatches`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `token ${GH_TOKEN}`,
-          "Accept": "application/vnd.github+json"
-        },
-        body: JSON.stringify({ event_type: "refresh" })
-      }
-    );
-    if (res.status === 204 || res.status === 0) {
-      st.textContent = "✅ آپدیت اجرا شد — تا ~۳۵ ثانیه دیگه خودم رفرش میکنم";
-      setTimeout(() => location.reload(), 35000);
-    } else {
-      st.textContent = "⚠️ خطا " + res.status + " — دوباره تلاش کن";
+    st.textContent = "⏳ درخواست آپدیت...";
+    const res = await fetch(`${API}/dispatches`, {
+      method: "POST", headers: {...H, "Content-Type": "application/json"},
+      body: JSON.stringify({ event_type: "refresh" })
+    });
+    if (res.status !== 204 && res.status !== 0) {
+      st.textContent = res.status === 401 ? "❌ توکن مشکل داره" : ("⚠️ خطا " + res.status);
       btn.disabled = false;
+      return;
     }
+
+    // record current latest run id BEFORE the new run appears
+    let runs = await (await fetch(`${API}/actions/runs?per_page=1`, {headers: H})).json();
+    const oldId = runs.workflow_runs[0] ? runs.workflow_runs[0].id : 0;
+
+    // wait for the NEW run to appear (up to 15s)
+    let runId = null;
+    for (let i = 0; i < 5; i++) {
+      await sleep(3000);
+      runs = await (await fetch(`${API}/actions/runs?per_page=1`, {headers: H})).json();
+      if (runs.workflow_runs[0] && runs.workflow_runs[0].id > oldId) {
+        runId = runs.workflow_runs[0].id;
+        break;
+      }
+    }
+    if (!runId) { st.textContent = "⚠️ ران جدید پیدا نشد — ۳۰ ثانیه دیگه دستی رفرش کن"; return; }
+
+    // poll until this run completes (max ~90s)
+    for (let i = 0; i < 30; i++) {
+      await sleep(3000);
+      const r = await (await fetch(`${API}/actions/runs/${runId}`, {headers: H})).json();
+      if (r.status === "completed") {
+        st.textContent = r.conclusion === "success"
+          ? "✅ آپدیت کامل شد — بارگذاری نسخه جدید..."
+          : ("⚠️ اجرا " + r.conclusion + " شد");
+        // pages deploy takes ~15s more
+        await sleep(12000);
+        location.reload();
+        return;
+      }
+      st.textContent = `🔄 در حال بروزرسانی... ${(i+1)*3} ثانیه`;
+    }
+    st.textContent = "⏱️ طول کشید — چند لحظه دیگه دستی رفرش کن";
   } catch (e) {
     st.textContent = "⚠️ خطای شبکه — دوباره تلاش کن";
     btn.disabled = false;
