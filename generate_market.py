@@ -487,7 +487,11 @@ async function livePageTimestamp() {{
 async function doRefresh(btn) {{
   btn.disabled = true;
   const st = document.getElementById("refresh-status");
-  const clickUTC = new Date().toISOString();
+  let oldId = 0;
+  try {{
+    const pre = await (await fetch(`${{API}}/actions/runs?per_page=1`, {{headers: H}})).json();
+    if (pre.workflow_runs[0]) oldId = pre.workflow_runs[0].id;
+  }} catch (e) {{}}
 
   try {{
     if (!GH_TOKEN) {{
@@ -508,14 +512,14 @@ async function doRefresh(btn) {{
       return;
     }}
 
-    // find OUR new repository_dispatch run (created after click)
+    // find OUR new dispatch run: id > pre-dispatch latest id
     let runId = null;
-    for (let i = 0; i < 8 && !runId; i++) {{
+    for (let i = 0; i < 10 && !runId; i++) {{
       await sleep(2500);
       const runs = await (await fetch(
-        `${{API}}/actions/runs?event=repository_dispatch&per_page=3`, {{headers: H}})).json();
+        `${{API}}/actions/runs?event=repository_dispatch&per_page=5`, {{headers: H}})).json();
       for (const r of (runs.workflow_runs || [])) {{
-        if (new Date(r.created_at) >= new Date(clickUTC)) {{ runId = r.id; break; }}
+        if (r.id > oldId) {{ runId = r.id; break; }}
       }}
     }}
     if (!runId) {{ st.textContent = "⚠️ ران جدید پیدا نشد — یه دقیقه دیگه دستی رفرش کن"; btn.disabled = false; return; }}
