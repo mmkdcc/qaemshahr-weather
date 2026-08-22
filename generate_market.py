@@ -1,92 +1,178 @@
 #!/usr/bin/env python3
-"""market_gen.py — Generate market analysis HTML using fast.py data"""
-import json, subprocess, sys, os
+"""generate_market.py — Standalone market page generator (no local deps).
+Fetches live data from public sources: tgju.org prices/history + news RSS.
+Works on GitHub Actions runners.
+"""
+import gzip, json, re, urllib.request, urllib.parse
 from datetime import datetime
 
-def run_fast(topic):
-    """Run fast.py and get output"""
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/126 Safari/537.36")
+
+def get(url, timeout=15):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    raw = urllib.request.urlopen(req, timeout=timeout).read()
     try:
-        result = subprocess.run(
-            ["python3", "/root/scripts/fast.py", topic],
-            capture_output=True, text=True, timeout=15
-        )
-        return result.stdout.strip()
-    except Exception as e:
-        return f"خطا در دریافت داده: {e}"
+        raw = gzip.decompress(raw)
+    except Exception:
+        pass
+    return raw.decode("utf-8", "ignore")
 
-def parse_prices(output):
-    """Parse prices from fast.py output"""
-    prices = {}
-    for line in output.split("\n"):
-        if "—" in line:
-            parts = line.split("—")
-            if len(parts) >= 2:
-                label = parts[0].strip().replace("•", "").strip()
-                value_part = parts[1].strip()
-                # Extract numbers
-                nums = []
-                for word in value_part.split():
-                    clean = word.replace(",", "").replace("تومان", "")
-                    if clean.isdigit():
-                        nums.append(int(clean))
-                if nums:
-                    prices[label] = nums[0]
-    return prices
+# ---------------------------------------------------------------- prices
+def daily_series(profile):
+    """Daily closes from a tgju profile page (chartData), in TOMAN."""
+    html = get(f"https://www.tgju.org/profile/{profile}")
+    arrs = re.findall(r'chartData:\s*(\[\[[\s\S]*?\]\])', html)
+    import collections
+    best = None
+    for a in arrs:
+        try:
+            data = json.loads(a)
+        except Exception:
+            continue
+        if len(data) > 500:
+            byday = collections.OrderedDict()
+            for p in data:
+                d = datetime.utcfromtimestamp(p[0] / 1000).strftime("%Y-%m-%d")
+                byday[d] = float(p[1]) / 10.0  # rial -> toman
+            if len(byday) > (len(best) if best else 0):
+                best = list(byday.items())
+    return best  # [(date, price)] ascending
 
-def format_number(n):
+def ta(series):
+    """Simple TA: SMA20 trend + RSI14 + 7d change."""
+    vals = [v for _, v in series]
+    cur = vals[-1]
+    sma20 = sum(vals[-20:]) / 20 if len(vals) >= 20 else None
+    # RSI14
+    rsi = None
+    if len(vals) >= 15:
+        gains = losses = 0.0
+        for i in range(-14, 0):
+            d = vals[i] - vals[i - 1]
+            if d > 0:
+                gains += d
+            else:
+                losses += abs(d)
+        rsi = 100.0 if losses == 0 else 100 - 100 / (1 + gains / losses)
+    chg7 = ((cur - vals[-8]) / vals[-8] * 100) if len(vals) >= 8 else None
+    if sma20 is None:
+        trend = "نامشخص"
+    elif cur > sma20 * 1.005:
+        trend = "صعودی 📈"
+    elif cur < sma20 * 0.995:
+        trend = "نزولی 📉"
+    else:
+        trend = "خنثی ⏸️"
+    return {"current": cur, "sma20": sma20, "rsi": rsi, "trend": trend,
+            "chg7": chg7, "old7": vals[-8] if len(vals) >= 8 else None}
+
+def fmt(n):
     if n is None:
         return "—"
-    return f"{n:,}"
+    return f"{n:,.0f}"
 
-def generate_html():
-    now = datetime.now().strftime("%Y/%m/%d %H:%M")
-    
-    # Get data
-    arz = run_fast("arz")
-    gold = run_fast("gold")
-    
-    arz_prices = parse_prices(arz)
-    gold_prices = parse_prices(gold)
-    
-    # Extract specific prices
-    dollar_buy = arz_prices.get("دلار آمریکا", None)
-    dollar_sell = arz_prices.get("دلار آمریکا", None)
-    
-    # Try to get both buy/sell from the output
-    for line in arz.split("\n"):
-        if "دلار آمریکا" in line and "خرید" in line and "فروش" in line:
-            import re
-            nums = re.findall(r'[\d,]+', line)
-            if len(nums) >= 2:
-                dollar_buy = int(nums[0].replace(",", ""))
-                dollar_sell = int(nums[1].replace(",", ""))
+# ---------------------------------------------------------------- news
+IRAN_MARKET_KW = ["اقتصاد", "دلار", "طلا", "تورم", "تحریم", "نرخ", "بازار",
+                  "سکه", "ارز", "نفت", "مذاکره", "بانک مرکزی", "قیمت", "بورس",
+                  "آمریکا", "ترامپ", "تنگه هرمز", "صادرات", "واردات"]
+
+def iran_news(limit=6):
+    out = []
+    try:
+        h = get("https://www.iranintl.com/sitemap-news.xml")
+        titles = re.findall(r"<news:title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</news:title>", h, re.S)
+        dates = re.findall(r"<news:publication_date>([^<]+)</news:publication_date>", h)
+        for t, d in zip(titles, dates):
+            t = re.sub(r"\s+", " ", t).strip()
+            if not any(k in t for k in IRAN_MARKET_KW):
+                continue
+            when = d.replace("T", " ")[:16]
+            out.append((t, when))
+            if len(out) >= limit:
                 break
-    
-    gold18 = gold_prices.get("گرم طلای ۱۸ عیار", None)
-    mesghal = gold_prices.get("آبشده(مثقال طلا)", None)
-    sekkeh = gold_prices.get("سکه امامی (طرح جدید)", None)
-    
-    # Calculate spread
-    dollar_spread = None
-    if dollar_buy and dollar_sell:
-        dollar_spread = ((dollar_sell - dollar_buy) / dollar_buy * 100)
-    
-    # Calculate bubble
-    hobab = None
-    hobab_pct = None
-    if gold18 and sekkeh:
-        gold_value = gold18 * 8.13  # 8.13 grams in sekkeh
-        hobab = sekkeh - gold_value
-        hobab_pct = (hobab / sekkeh * 100) if sekkeh else 0
-    
-    # Market assessment
-    market_mood = "آرام"
-    if dollar_spread and dollar_spread > 1.5:
-        market_mood = "پرنوسان"
-    elif dollar_spread and dollar_spread < 0.5:
-        market_mood = "بسیار آرام"
-    
-    return f"""<!DOCTYPE html>
+    except Exception:
+        pass
+    if len(out) < 3:
+        try:
+            h = get("https://news.google.com/rss/search?q="
+                    + urllib.parse.quote("iran dollar OR gold economy")
+                    + "&hl=en&gl=US&ceid=US:en")
+            items = re.findall(r"<title>(.*?)</title>", h)[:5]
+            for it in items:
+                if "<![CDATA[" in it:
+                    it = re.sub(r"<!\[CDATA\[|\]\]>", "", it)
+                if it and "Google News" not in it:
+                    out.append((it.strip(), ""))
+                if len(out) >= limit:
+                    break
+        except Exception:
+            pass
+    return out
+
+# ---------------------------------------------------------------- forecast
+def forecast(gold, dollar):
+    lines = []
+    if gold.get("rsi") is not None and gold["rsi"] > 70:
+        lines.append(f"🥇 <strong>طلا:</strong> {gold['trend']} — RSI {gold['rsi']:.1f}")
+        lines.append("⚠️ RSI طلا بالای ۷۰ هست (اشباع خرید) — احتمال اصلاح در کوتاه‌مدت وجود داره.")
+    elif gold.get("rsi") is not None:
+        lines.append(f"🥇 <strong>طلا:</strong> {gold['trend']} — RSI {gold['rsi']:.1f}")
+    if dollar.get("rsi") is not None:
+        lines.append(f"💵 <strong>دلار:</strong> {dollar['trend']} — RSI {dollar['rsi']:.1f}")
+        if 30 <= dollar["rsi"] <= 70:
+            lines.append("✅ RSI دلار در محدوده عادی هست — روند پایدار.")
+    return "\n    <br>\n    ".join(lines)
+
+# ---------------------------------------------------------------- main
+def main():
+    print("fetching dollar history...", flush=True)
+    d_series = daily_series("price_dollar_rl")
+    print("fetching gold18 history...", flush=True)
+    g_series = daily_series("geram18")
+    print("fetching mesghal history...", flush=True)
+    m_series = daily_series("mesghal")
+
+    d = ta(d_series) if d_series else {}
+    g = ta(g_series) if g_series else {}
+    m = ta(m_series) if m_series else {}
+
+    now = datetime.now().strftime("%Y/%m/%d %H:%M")
+    news = iran_news()
+
+    news_html = "".join(
+        f'<div class="news-item"><span class="ni-badge">📰</span>'
+        f'<div class="ni-content"><div class="ni-title">{t}</div>'
+        f'<div class="ni-desc">{w}</div></div></div>\n'
+        for t, w in news
+    ) or '<div style="color:#64748b;font-size:0.75rem;text-align:center;padding:12px">اخبار در دسترس نیست</div>'
+
+    def cmp_line(icon, name, data):
+        if not data or data.get("old7") is None:
+            return f"{icon} <strong>{name}:</strong> —"
+        return (f'{icon} <strong>{name}:</strong> {fmt(data["old7"])} → '
+                f'{fmt(data["current"])} (<span class="{"up" if data["chg7"]>=0 else "down"}">'
+                f'{data["chg7"]:+.1f}%</span>)')
+
+    cmp_html = "<br>\n    ".join([
+        cmp_line("💵", "دلار", d),
+        cmp_line("🥇", "طلای ۱۸", g),
+        cmp_line("⚖️", "مثقال", m),
+    ])
+
+    fc_html = forecast(g, d)
+
+    ta_box = lambda icon, name, x: (
+        f'<div class="ta-box"><div class="ta-label">{icon} {name}</div>'
+        f'<div class="ta-value">{x.get("trend","نامشخص")}'
+        f'{f" • RSI {x[chr(39)+chr(39)]}" if False else ""}'
+        f'{" • اشباع خرید ⚠️" if x.get("rsi") and x["rsi"] > 70 else ""}'
+        f'{" • اشباع فروش 🟢" if x.get("rsi") and x["rsi"] < 30 else ""}'
+        f'{" • عادی" if x.get("rsi") and 30 <= x["rsi"] <= 70 else ""}'
+        f'</div></div>' if x else
+        f'<div class="ta-box"><div class="ta-label">{icon} {name}</div><div class="ta-value">نامشخص</div></div>')
+
+    html = f"""<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -99,103 +185,79 @@ def generate_html():
 @keyframes fadeUp{{from{{opacity:0;transform:translateY(16px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.7}}}}
 *{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:'Inter',-apple-system,sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh;padding:16px;max-width:480px;margin:0 auto;line-height:1.7}}
-.nav{{display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:20px}}
+body{{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh;padding:16px;max-width:480px;margin:0 auto;line-height:1.7}}
+.nav{{display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:16px}}
 .nav-back{{font-size:0.85rem;color:#64748b;text-decoration:none}}
-.nav-title{{font-size:0.8rem;color:#94a3b8;font-weight:600}}
 .hero{{background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:20px;padding:24px;text-align:center;margin-bottom:20px;border:1px solid rgba(129,140,248,0.2);animation:fadeUp .5s ease}}
 .hero-icon{{font-size:2.5rem;margin-bottom:8px}}
 .hero-title{{font-size:1.2rem;font-weight:800;color:#f1f5f9}}
 .hero-sub{{font-size:0.75rem;color:#818cf8;margin-top:4px}}
-.price-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}}
-.price-card{{background:#111827;border-radius:16px;padding:16px;text-align:center;border:1px solid rgba(255,255,255,0.06);animation:fadeUp .5s ease}}
-.price-card:nth-child(2){{animation-delay:.1s}}
-.price-card:nth-child(3){{animation-delay:.2s}}
-.price-card:nth-child(4){{animation-delay:.3s}}
-.pc-icon{{font-size:1.8rem;margin-bottom:4px}}
-.pc-label{{font-size:0.7rem;color:#64748b;margin-bottom:6px}}
-.pc-value{{font-size:1.3rem;font-weight:900;color:#f1f5f9}}
-.pc-unit{{font-size:0.6rem;color:#475569;margin-top:2px}}
-.dollar .pc-value{{color:#22c55e}}
-.gold .pc-value{{color:#fbbf24}}
-.mesghal .pc-value{{color:#a78bfa}}
-.sekkeh .pc-value{{color:#f97316}}
-.analysis-box,.news-section{{background:#111827;border-radius:16px;padding:18px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.06);animation:fadeUp .5s ease}}
-.ab-title,.ns-title{{font-size:0.9rem;font-weight:700;color:#f1f5f9;margin-bottom:12px}}
-.ab-content{{font-size:0.8rem;color:#94a3b8;line-height:1.8}}
-.ab-content p{{margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px}}
-.ab-content strong{{color:#e2e8f0}}
-.news-item{{display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:8px}}
-.ni-badge{{font-size:1.2rem;flex-shrink:0}}
-.ni-content{{flex:1}}
-.ni-title{{font-size:0.8rem;font-weight:600;color:#e2e8f0;margin-bottom:2px}}
-.ni-desc{{font-size:0.7rem;color:#64748b}}
-.update-bar{{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;color:#475569;font-size:0.7rem}}
+.section{{background:#111827;border-radius:16px;padding:18px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.06);animation:fadeUp .5s ease}}
+.section-title{{font-size:0.9rem;font-weight:700;margin-bottom:12px}}
+.price-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+.price-card{{background:rgba(255,255,255,0.03);border-radius:12px;padding:14px;text-align:center}}
+.pc-icon{{font-size:1.6rem;margin-bottom:4px}}
+.pc-label{{font-size:0.68rem;color:#64748b;margin-bottom:4px}}
+.pc-value{{font-size:1.15rem;font-weight:900}}
+.pc-unit{{font-size:0.58rem;color:#475569;margin-top:2px}}
+.green{{color:#22c55e}} .gold{{color:#fbbf24}} .purple{{color:#a78bfa}} .orange{{color:#f97316}}
+.ta-box{{background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;margin-bottom:8px}}
+.ta-label{{font-size:0.7rem;color:#64748b}} .ta-value{{font-size:0.85rem;font-weight:700}}
+.news-item{{display:flex;gap:8px;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:8px}}
+.ni-badge{{font-size:1rem}} .ni-title{{font-size:0.78rem;color:#e2e8f0;line-height:1.6}}
+.ni-desc{{font-size:0.62rem;color:#475569;margin-top:2px}}
+.cmp{{font-size:0.78rem;color:#94a3b8;line-height:2;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px}}
+.up{{color:#22c55e;font-weight:700}} .down{{color:#ef4444;font-weight:700}}
+.update-bar{{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;color:#475569;font-size:0.68rem}}
 .ub-dot{{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}}
+.warn{{font-size:0.72rem;color:#94a3b8;margin-top:10px}}
 </style>
 </head>
 <body>
 <div class="nav">
   <a href="index.html" class="nav-back">→ صفحه اصلی</a>
-  <span class="nav-title">📈 تحلیل بازار</span>
+  <span style="color:#94a3b8;font-size:0.8rem;font-weight:600">📈 تحلیل بازار</span>
 </div>
 <div class="hero">
   <div class="hero-icon">📊</div>
   <div class="hero-title">تحلیل حرفه‌ای بازار</div>
-  <div class="hero-sub">طلا و دلار ایران • بروزرسانی خودکار</div>
+  <div class="hero-sub">طلا و دلار ایران • تحلیل تکنیکال + اخبار • منبع: tgju.org</div>
 </div>
 
-<div class="price-grid">
-  <div class="price-card dollar">
-    <div class="pc-icon">💵</div>
-    <div class="pc-label">دلار آمریکا</div>
-    <div class="pc-value">{format_number(dollar_sell) if dollar_sell else "—"}</div>
-    <div class="pc-unit">تومان (فروش)</div>
-  </div>
-  <div class="price-card gold">
-    <div class="pc-icon">🥇</div>
-    <div class="pc-label">طلای ۱۸ عیار</div>
-    <div class="pc-value">{format_number(gold18)}</div>
-    <div class="pc-unit">تومان / گرم</div>
-  </div>
-  <div class="price-card mesghal">
-    <div class="pc-icon">⚖️</div>
-    <div class="pc-label">مثقال طلا</div>
-    <div class="pc-value">{format_number(mesghal)}</div>
-    <div class="pc-unit">تومان</div>
-  </div>
-  <div class="price-card sekkeh">
-    <div class="pc-icon">🪙</div>
-    <div class="pc-label">سکه امامی</div>
-    <div class="pc-value">{format_number(sekkeh)}</div>
-    <div class="pc-unit">تومان</div>
+<div class="section">
+  <div class="section-title">💰 قیمت‌های لحظه‌ای</div>
+  <div class="price-grid">
+    <div class="price-card"><div class="pc-icon">💵</div><div class="pc-label">دلار آمریکا</div><div class="pc-value green">{fmt(d.get('current'))}</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">🥇</div><div class="pc-label">طلای ۱۸ عیار</div><div class="pc-value gold">{fmt(g.get('current'))}</div><div class="pc-unit">تومان / گرم</div></div>
+    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">{fmt(m.get('current'))}</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">📊</div><div class="pc-label">روند بازار</div><div class="pc-value orange">{g.get('trend', '—')}</div><div class="pc-unit">طلا (۷ روزه: {f"{g['chg7']:+.1f}%" if g.get('chg7') is not None else '—'})</div></div>
   </div>
 </div>
 
-<div class="analysis-box">
-  <div class="ab-title">📊 تحلیل وضعیت فعلی</div>
-  <div class="ab-content">
-    <p>💵 <strong>دلار:</strong> خرید {format_number(dollar_buy)} / فروش {format_number(dollar_sell)} — اسپرد {f"{dollar_spread:.1f}" if dollar_spread else "—"}٪ — بازار {market_mood}</p>
-    <p>🥇 <strong>طلا:</strong> هر گرم {format_number(gold18)} تومان — مثقال {format_number(mesghal)} تومان</p>
-    {"<p>🪙 <strong>سکه:</strong> " + format_number(sekkeh) + " تومان — حباب " + format_number(int(hobab)) + " تومان (" + f"{hobab_pct:.1f}" + "٪)" + " — " + ("طبیعی" if hobab_pct and hobab_pct < 10 else "بالا ⚠️") + "</p>" if hobab else ""}
+<div class="section">
+  <div class="section-title">📊 تحلیل تکنیکال</div>
+  {ta_box("💵", "دلار", d)}
+  {ta_box("🥇", "طلای ۱۸", g)}
+  {ta_box("⚖️", "مثقال", m)}
+</div>
+
+<div class="section">
+  <div class="section-title">📰 آخرین اخبار بازار</div>
+  {news_html}
+</div>
+
+<div class="section">
+  <div class="section-title">📅 مقایسه با هفته قبل</div>
+  <div class="cmp">
+    {cmp_html}
   </div>
 </div>
 
-<div class="news-section">
-  <div class="ns-title">📰 اطلاعات بازار</div>
-  <div class="news-item">
-    <span class="ni-badge">📊</span>
-    <div class="ni-content">
-      <div class="ni-title">منابع داده</div>
-      <div class="ni-desc">tgju.org • Binance • Open-Meteo</div>
-    </div>
-  </div>
-  <div class="news-item">
-    <span class="ni-badge">⏱️</span>
-    <div class="ni-content">
-      <div class="ni-title">بروزرسانی خودکار</div>
-      <div class="ni-desc">هر ۵ ساعت اطلاعات تازه میشه</div>
-    </div>
+<div class="section">
+  <div class="section-title">🔮 پیش‌بینی هفته آینده</div>
+  <div class="cmp">
+    {fc_html}
+    <div class="warn">⚠️ <strong>هشدار:</strong> این تحلیل آماری است و نصیحت مالی نیست. حد ضرر یادتون نره!</div>
   </div>
 </div>
 
@@ -206,8 +268,9 @@ body{{font-family:'Inter',-apple-system,sans-serif;background:#0a0e1a;color:#e2e
 </body>
 </html>"""
 
-if __name__ == "__main__":
-    html = generate_html()
-    with open("/tmp/weather-site/market.html", "w") as f:
+    with open("market.html", "w") as f:
         f.write(html)
-    print("Generated: /tmp/weather-site/market.html")
+    print(f"Generated market.html ({len(html)} bytes)")
+
+if __name__ == "__main__":
+    main()

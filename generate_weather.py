@@ -298,5 +298,5 @@ details[open] .d-arrow{{transform:rotate(90deg);color:#38bdf8}}
 <div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • بروزرسانی: {now} • ساخته شده با ❤️</div>
 </body></html>"""
 
-pathlib.Path("/tmp/qshahr_weather_pro.html").write_text(full,encoding="utf-8")
-print("MEDIA:/tmp/qshahr_weather_pro.html")
+pathlib.Path("weather.html").write_text(full,encoding="utf-8")
+print("Generated: weather.html")

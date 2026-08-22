@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0e1a">
 <title>تحلیل بازار طلا و دلار</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -13,110 +14,96 @@
 body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh;padding:16px;max-width:480px;margin:0 auto;line-height:1.7}
 .nav{display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:16px}
 .nav-back{font-size:0.85rem;color:#64748b;text-decoration:none}
-.hero{background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:20px;padding:20px;text-align:center;margin-bottom:16px;border:1px solid rgba(129,140,248,0.2);animation:fadeUp .5s ease}
-.hero-icon{font-size:2.2rem;margin-bottom:6px}
-.hero-title{font-size:1.1rem;font-weight:800}
-.hero-sub{font-size:0.7rem;color:#818cf8;margin-top:4px}
-.section{background:#111827;border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.06);animation:fadeUp .5s ease}
-.section-title{font-size:0.85rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.price-card{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px;text-align:center}
-.pc-icon{font-size:1.5rem}
-.pc-label{font-size:0.65rem;color:#64748b;margin:4px 0}
-.pc-value{font-size:1.1rem;font-weight:900}
-.pc-unit{font-size:0.55rem;color:#475569}
+.hero{background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:20px;padding:24px;text-align:center;margin-bottom:20px;border:1px solid rgba(129,140,248,0.2);animation:fadeUp .5s ease}
+.hero-icon{font-size:2.5rem;margin-bottom:8px}
+.hero-title{font-size:1.2rem;font-weight:800;color:#f1f5f9}
+.hero-sub{font-size:0.75rem;color:#818cf8;margin-top:4px}
+.section{background:#111827;border-radius:16px;padding:18px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.06);animation:fadeUp .5s ease}
+.section-title{font-size:0.9rem;font-weight:700;margin-bottom:12px}
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.price-card{background:rgba(255,255,255,0.03);border-radius:12px;padding:14px;text-align:center}
+.pc-icon{font-size:1.6rem;margin-bottom:4px}
+.pc-label{font-size:0.68rem;color:#64748b;margin-bottom:4px}
+.pc-value{font-size:1.15rem;font-weight:900}
+.pc-unit{font-size:0.58rem;color:#475569;margin-top:2px}
 .green{color:#22c55e} .gold{color:#fbbf24} .purple{color:#a78bfa} .orange{color:#f97316}
 .ta-box{background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;margin-bottom:8px}
 .ta-label{font-size:0.7rem;color:#64748b} .ta-value{font-size:0.85rem;font-weight:700}
-.news-item{display:flex;gap:8px;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:6px}
-.ni-badge{font-size:1rem} .ni-title{font-size:0.75rem;color:#e2e8f0}
-.compare-box{display:flex;justify-content:space-around;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:8px}
-.compare-item{text-align:center}
-.compare-label{font-size:0.6rem;color:#64748b} .compare-value{font-size:0.9rem;font-weight:700}
-.up{color:#22c55e} .down{color:#ef4444}
-.update-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;color:#475569;font-size:0.65rem}
-.ub-dot{width:5px;height:5px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
+.news-item{display:flex;gap:8px;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:8px}
+.ni-badge{font-size:1rem} .ni-title{font-size:0.78rem;color:#e2e8f0;line-height:1.6}
+.ni-desc{font-size:0.62rem;color:#475569;margin-top:2px}
+.cmp{font-size:0.78rem;color:#94a3b8;line-height:2;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px}
+.up{color:#22c55e;font-weight:700} .down{color:#ef4444;font-weight:700}
+.update-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;color:#475569;font-size:0.68rem}
+.ub-dot{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
+.warn{font-size:0.72rem;color:#94a3b8;margin-top:10px}
 </style>
 </head>
 <body>
 <div class="nav">
   <a href="index.html" class="nav-back">→ صفحه اصلی</a>
-  <span style="color:#94a3b8;font-size:0.8rem;font-weight:600">📊 تحلیل بازار</span>
+  <span style="color:#94a3b8;font-size:0.8rem;font-weight:600">📈 تحلیل بازار</span>
 </div>
 <div class="hero">
-  <div class="hero-icon">📈</div>
+  <div class="hero-icon">📊</div>
   <div class="hero-title">تحلیل حرفه‌ای بازار</div>
-  <div class="hero-sub">طلا و دلار ایران • تحلیل تکنیکال + اخبار</div>
+  <div class="hero-sub">طلا و دلار ایران • تحلیل تکنیکال + اخبار • منبع: tgju.org</div>
 </div>
 
 <div class="section">
   <div class="section-title">💰 قیمت‌های لحظه‌ای</div>
   <div class="price-grid">
-    <div class="price-card"><div class="pc-icon">💵</div><div class="pc-label">دلار</div><div class="pc-value green">189,500</div><div class="pc-unit">تومان</div></div>
-    <div class="price-card"><div class="pc-icon">🥇</div><div class="pc-label">طلای ۱۸</div><div class="pc-value gold">20,557,270</div><div class="pc-unit">تومان/گرم</div></div>
-    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال</div><div class="pc-value purple">89,050,000</div><div class="pc-unit">تومان</div></div>
-    <div class="price-card"><div class="pc-icon">🪙</div><div class="pc-label">سکه</div><div class="pc-value orange">205,000,000</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">💵</div><div class="pc-label">دلار آمریکا</div><div class="pc-value green">189,400</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">🥇</div><div class="pc-label">طلای ۱۸ عیار</div><div class="pc-value gold">19,852,700</div><div class="pc-unit">تومان / گرم</div></div>
+    <div class="price-card"><div class="pc-icon">⚖️</div><div class="pc-label">مثقال طلا</div><div class="pc-value purple">85,999,000</div><div class="pc-unit">تومان</div></div>
+    <div class="price-card"><div class="pc-icon">📊</div><div class="pc-label">روند بازار</div><div class="pc-value orange">صعودی 📈</div><div class="pc-unit">طلا (۷ روزه: +5.6%)</div></div>
   </div>
 </div>
 
 <div class="section">
   <div class="section-title">📊 تحلیل تکنیکال</div>
-  <div class="ta-box">
-    <div class="ta-label">🥇 طلا</div>
-    <div class="ta-value">صعودی 📈 • اشباع خرید (75.7) ⚠️</div>
-  </div>
-  <div class="ta-box">
-    <div class="ta-label">💵 دلار</div>
-    <div class="ta-value">خنثی ⏸️ • عادی (38.5)</div>
-  </div>
-  <div class="ta-box">
-    <div class="ta-label">⚖️ مثقال</div>
-    <div class="ta-value">صعودی 📈 • اشباع خرید (75.7) ⚠️</div>
-  </div>
-  <div class="ta-box" style="margin-top:8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.15)">
-    <div class="ta-label">📌 خلاصه</div>
-    <div style="font-size:0.75rem;color:#e2e8f0;margin-top:4px;line-height:1.8">🥇 طلا: صعودی 📈 • RSI 75.7 • 💵 دلار: خنثی ⏸️ • RSI 38.5 • ⚖️ مثقال: صعودی 📈 • RSI 75.7</div>
-  </div>
+  <div class="ta-box"><div class="ta-label">💵 دلار</div><div class="ta-value">خنثی ⏸️ • عادی</div></div>
+  <div class="ta-box"><div class="ta-label">🥇 طلای ۱۸</div><div class="ta-value">صعودی 📈 • اشباع خرید ⚠️</div></div>
+  <div class="ta-box"><div class="ta-label">⚖️ مثقال</div><div class="ta-value">صعودی 📈 • اشباع خرید ⚠️</div></div>
 </div>
 
 <div class="section">
   <div class="section-title">📰 آخرین اخبار بازار</div>
-  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">مقام‌های نظامی کویت و آمریکا در پنتاگون درباره همکاری‌های دفاعی گفت‌وگو کردند</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">افزایش دو تا چهار برابری قیمت گوشی تلفن همراه در ایران طی یک سال</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">روح‌الله رحیم‌پور: فشار هم‌زمان اقتصادی و نظامی، جمهوری‌اسلامی را شکننده می‌کند</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">عارف: باید مردم را درباره هزینه تامین بنزین توجیه کنیم</div></div></div>
-<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">کارشناس نفت و انرژی: صادرات فرآورده‌های نفتی ایران تقریبا متوقف شده است</div></div></div>
+  <div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">مقام‌های نظامی کویت و آمریکا در پنتاگون درباره همکاری‌های دفاعی گفت‌وگو کردند</div><div class="ni-desc">2026-08-22 08:20</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">افزایش دو تا چهار برابری قیمت گوشی تلفن همراه در ایران طی یک سال</div><div class="ni-desc">2026-08-22 08:14</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">روح‌الله رحیم‌پور: فشار هم‌زمان اقتصادی و نظامی، جمهوری‌اسلامی را شکننده می‌کند</div><div class="ni-desc">2026-08-22 07:49</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">کارشناس نفت و انرژی: صادرات فرآورده‌های نفتی ایران تقریبا متوقف شده است</div><div class="ni-desc">2026-08-22 07:30</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">آمریکا در پی شکست مذاکرات، تعرفه ۵۰ درصدی بر برخی کالاهای کانادایی وضع کرد</div><div class="ni-desc">2026-08-22 06:57</div></div></div>
+<div class="news-item"><span class="ni-badge">📰</span><div class="ni-content"><div class="ni-title">ایرنا: جمهوری اسلامی به شماری از نفتکش‌های عراقی اجازه عبور از تنگه هرمز داده است</div><div class="ni-desc">2026-08-22 06:53</div></div></div>
 
 </div>
 
 <div class="section">
   <div class="section-title">📅 مقایسه با هفته قبل</div>
-  <div style="font-size:0.75rem;color:#94a3b8;line-height:1.8;padding:8px;background:rgba(255,255,255,0.03);border-radius:10px">
-    💵 <strong>دلار:</strong> 185,900 → 189,500 (+1.9%)
-    <br>
-    🥇 <strong>طلای ۱۸:</strong> 18,814,600 → 20,557,270 (+9.3%)
-    <br>
-    🪙 <strong>سکه:</strong> — → 205,000,000 (+7.4%)
+  <div class="cmp">
+    💵 <strong>دلار:</strong> 185,600 → 189,400 (<span class="up">+2.0%</span>)<br>
+    🥇 <strong>طلای ۱۸:</strong> 18,801,600 → 19,852,700 (<span class="up">+5.6%</span>)<br>
+    ⚖️ <strong>مثقال:</strong> 81,476,000 → 85,999,000 (<span class="up">+5.6%</span>)
   </div>
 </div>
 
 <div class="section">
   <div class="section-title">🔮 پیش‌بینی هفته آینده</div>
-  <div style="font-size:0.8rem;color:#94a3b8;line-height:1.8;padding:8px;background:rgba(255,255,255,0.03);border-radius:10px">
+  <div class="cmp">
     🥇 <strong>طلا:</strong> صعودی 📈 — RSI 75.7
     <br>
-    💵 <strong>دلار:</strong> خنثی ⏸️ — RSI 38.5
-    <br><br>
     ⚠️ RSI طلا بالای ۷۰ هست (اشباع خرید) — احتمال اصلاح در کوتاه‌مدت وجود داره.
+    <br>
+    💵 <strong>دلار:</strong> خنثی ⏸️ — RSI 38.5
+    <br>
     ✅ RSI دلار در محدوده عادی هست — روند پایدار.
-    <br><br>
-    ⚠️ <strong>هشدار:</strong> این تحلیل آماری است و نصیحت مالی نیست. حد ضرر یادتون نره!
+    <div class="warn">⚠️ <strong>هشدار:</strong> این تحلیل آماری است و نصیحت مالی نیست. حد ضرر یادتون نره!</div>
   </div>
 </div>
 
 <div class="update-bar">
   <span class="ub-dot"></span>
-  آخرین بروزرسانی: 2026/08/22 09:00
+  آخرین بروزرسانی: 2026/08/22 09:27
 </div>
 </body>
 </html>
