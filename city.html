@@ -144,6 +144,7 @@ qEl.addEventListener('input',()=>{
  if(v.length<2){ if(!v) resEl.innerHTML=''; else resEl.innerHTML=''; return; }
  timer=setTimeout(()=>{lastQ=v;search(v)},400);
 });
+qEl.addEventListener("focus",()=>{setTimeout(()=>{qEl.scrollIntoView({block:"center",behavior:"smooth"})},300)});
 clearBtn.addEventListener('click',()=>{
  qEl.value='';clearBtn.style.display='none';
  resEl.innerHTML='';document.getElementById('quickBox').style.display='block';qEl.focus();

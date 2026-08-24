@@ -30,12 +30,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .days-container{padding:16px 10px;display:flex;flex-direction:column;gap:10px}
 .day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}
 .day-card:active{transform:scale(.99)}
-details{width:100%;display:block}
-details[open]{background:#0d1220}
-details>summary{list-style:none}
-details>summary::-webkit-details-marker,details>summary::marker{display:none;content:""}
-summary{padding:16px 14px;cursor:pointer;touch-action:manipulation;list-style:none;display:flex;align-items:center;gap:10px;-webkit-user-select:none;user-select:none}
-summary::-webkit-details-marker,summary::marker{display:none;content:""}
+.d-head{width:100%;display:flex;align-items:center;gap:10px;padding:16px 14px;background:none;border:none;color:inherit;font-family:inherit;text-align:right;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-appearance:none;appearance:none;outline:none}
+.d-head:focus-visible{outline:2px solid #38bdf8;outline-offset:-2px;border-radius:16px}
 .d-icon{font-size:1.8rem;flex-shrink:0}
 .d-info{flex:1;min-width:0}
 .d-title{font-weight:700;font-size:.9rem;color:#f1f5f9}
@@ -51,7 +47,9 @@ summary::-webkit-details-marker,summary::marker{display:none;content:""}
 .tag-today{background:linear-gradient(135deg,#0284c7,#0ea5e9);color:#fff;font-size:.55rem;padding:2px 7px;border-radius:5px;font-weight:700;margin-right:5px;vertical-align:middle}
 .tag-sub{background:#1e293b;color:#94a3b8;font-size:.55rem;padding:2px 7px;border-radius:5px;font-weight:600;margin-right:5px;vertical-align:middle;border:1px solid rgba(255,255,255,.08)}
 .d-arrow{font-size:1.3rem;color:#475569;transition:transform .3s;flex-shrink:0;font-weight:300}
-details[open] .d-arrow{transform:rotate(90deg);color:#38bdf8}
+.day-card.open{background:#0d1220}
+.day-card.open .d-arrow{transform:rotate(90deg);color:#38bdf8}
+.day-card:not(.open) .h-panel{display:none}
 .h-panel{padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06);animation:panelIn .3s ease}
 @keyframes panelIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .p-sec{margin-top:14px}
@@ -294,20 +292,20 @@ const dow=DNAMES[["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","S
    rows+=`<tr class="${rc}"><td class="tc-time">${String(hr).padStart(2,'0')}:00 <span class="tc-lbl">${hlabel(hr)}</span></td><td class="tc-desc">${wi2} ${wd}</td><td class="tc-temp">${pn(Math.round(t))}°</td><td class="tc-feels">${pn(Math.round(fl))}°</td><td class="tc-humid">${pn(Math.round(hu))}%</td><td class="tc-pop">${pn(pp)}%</td><td class="tc-wind">${pn(Math.round(wi))} km/h</td></tr>`;
  });
 
- dhtml+=`<div class="day-card"><details ${vis}><summary>
+ dhtml+=`<div class="day-card${vis?" open":""}"><button type="button" class="d-head" aria-expanded="${vis?"true":"false"}">
 <div class="d-icon">${dicon}</div>
 <div class="d-info"><div class="d-title">${dow} <small>${pn(dayN)} ${m}</small> ${tag}</div><div class="d-desc">${ddesc}</div></div>
 <div class="d-stats"><div class="d-trange"><span class="t-hi">${pn(Math.round(mx))}°</span><span class="t-sep">/</span><span class="t-lo">${pn(Math.round(mn))}°</span></div>
 <div class="d-meta">${mp>10?`<span>☔ ${pn(mp)}%</span>`:""}<span>💧 ${pn(Math.round(ah))}%</span></div></div>
 <div class="d-arrow">‹</div>
-</summary>
+</button>
 <div class="h-panel">
 <div class="p-sec"><div class="p-title">📊 دمای ساعتی</div><div class="mini-chart">${mbar}</div></div>
 <div class="p-sec"><div class="p-title">📋 جزئیات ساعتی</div><div class="scroll-x"><table class="htbl">
 <thead><tr><th>ساعت</th><th>وضعیت</th><th>دما</th><th>احساس</th><th>رطوبت</th><th>بارش</th><th>باد</th></tr></thead>
 <tbody>${rows}</tbody></table></div></div>
 <div class="p-sec summary-box"><div class="p-title">📝 خلاصه وضعیت ${dow}</div><div class="summary-text">${summary}</div></div>
-</div></details></div>`;
+</div></div></div>`;
 });
 
 const now=new Date().toLocaleString('fa-IR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -317,24 +315,16 @@ hero+chart+popHtml+
 `<div class="days-container">${dhtml}</div>`+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 
-/* robust day-card toggling (fixes unresponsive taps on mobile) */
-document.querySelectorAll('.day-card details').forEach(d=>{
-  d.addEventListener('toggle',()=>{});
-});
-/* Day-card toggle: let native <details> behavior run, with anti-double-toggle fallback */
+/* Accordion for day cards — pure JS, no <details>, works everywhere */
 function bindDayCards(){
-  document.querySelectorAll('.day-card details').forEach(det=>{
-    if(det.__bound)return; det.__bound=true;
-    det.addEventListener('click',e=>{
-      if(e.target.closest('a,button,input'))return;
-      // If inside open panel body, do nothing.
-      const sum=det.querySelector('summary');
-      if(sum.contains(e.target)){
-        // schedule fallback: if native toggle didn't fire within 350ms, force it
-        const was=det.open;
-        clearTimeout(det.__t);
-        det.__t=setTimeout(()=>{ if(det.open===was) det.open=!was; },350);
-      }
+  document.querySelectorAll('.day-card .d-head').forEach(btn=>{
+    if(btn.__bound)return; btn.__bound=true;
+    btn.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      const card=btn.closest('.day-card');
+      const willOpen=!card.classList.contains('open');
+      document.querySelectorAll('.day-card.open').forEach(c=>{c.classList.remove('open');c.querySelector('.d-head').setAttribute('aria-expanded','false')});
+      if(willOpen){card.classList.add('open');btn.setAttribute('aria-expanded','true')}
     });
   });
 }
