@@ -74,8 +74,13 @@ details[open] .d-arrow{transform:rotate(90deg);color:#38bdf8}
 .scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .scroll-x::-webkit-scrollbar{height:3px}
 .scroll-x::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
-.search-link{display:block;max-width:200px;margin:18px auto 0;text-align:center;color:rgba(255,255,255,.85);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);padding:8px 18px;border-radius:24px;text-decoration:none;font-size:.78rem;font-weight:600;position:relative;backdrop-filter:blur(4px);transition:all .2s}
+.search-link{display:inline-block;margin:18px 6px 0;color:rgba(255,255,255,.85);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);padding:8px 18px;border-radius:24px;text-decoration:none;font-size:.78rem;font-weight:600;position:relative;backdrop-filter:blur(4px);transition:all .2s}
 .search-link:hover{background:rgba(255,255,255,.2)}
+.home-link{display:inline-block;margin:18px 6px 0;color:#fcd34d;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);padding:8px 18px;border-radius:24px;text-decoration:none;font-size:.78rem;font-weight:600;position:relative;backdrop-filter:blur(4px);transition:all .2s}
+.home-link:hover{background:rgba(251,191,36,.2)}
+.refresh-btn{display:inline-flex;align-items:center;gap:6px;margin-top:14px;color:#818cf8;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);padding:7px 16px;border-radius:24px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;position:relative;transition:all .2s}
+.refresh-btn:hover{background:rgba(99,102,241,.22)}
+.refresh-btn:disabled{opacity:.5;cursor:wait}
 .loader{max-width:420px;margin:80px auto;text-align:center;color:#64748b;font-size:.85rem;line-height:2}
 .spin{display:inline-block;width:26px;height:26px;border:3px solid #1e293b;border-top-color:#fbbf24;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px;display:block;margin-inline:auto}
 .err{max-width:420px;margin:80px auto;text-align:center;color:#f87171;font-size:.85rem;line-height:2}
@@ -138,18 +143,19 @@ function hlabel(h){
  return pn(h-12)+" شب";
 }
 
-async function main(){
+async function main(silent){
  const url=`https://api.open-meteo.com/v1/forecast?latitude=${CITY.lat}&longitude=${CITY.lon}`
   +"&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weathercode,windspeed_10m,pressure_msl"
   +"&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weathercode,windspeed_10m"
   +"&timezone=Asia%2FTehran&forecast_days=7&models=ecmwf_ifs025";
  let data;
+ if(!silent)document.getElementById('app').innerHTML='<div class="loader"><span class="spin"></span>در حال دریافت اطلاعات آب و هوا…</div>';
  try{
-   const r=await fetch(url);
+   const r=await fetch(url,{cache:'no-store'});
    if(!r.ok)throw 0;
    data=await r.json();
  }catch(e){
-   document.getElementById('app').innerHTML='<div class="err">⚠️ خطا در دریافت داده‌ها<br><a href="index.html">بازگشت به خانه</a></div>';
+   if(!silent)document.getElementById('app').innerHTML='<div class="err">⚠️ خطا در دریافت داده‌ها<br><a href="index.html">بازگشت به خانه</a></div>';
    return;
  }
  render(data);
@@ -171,7 +177,7 @@ const hero=`<div class="hero" style="background:${cgrad}">
 <div class="hd"><span class="hd-l">🌡️ فشار</span><span class="hd-v">${pn(Math.round(cur.pressure_msl||0))} hPa</span></div>
 <div class="hd"><span class="hd-l">${uvE(cur.temperature_2m)} احساس</span><span class="hd-v">${pn(Math.round(cur.apparent_temperature))}°</span></div>
 </div>
-<a class="search-link" href="city.html">🔎 جستجوی شهر دیگر</a></div>`;
+<div class="hero-btns"><a class="search-link" href="city.html">🔎 جستجوی شهر دیگر</a><a class="home-link" href="index.html">🏠 صفحه اصلی</a></div><button class="refresh-btn" id="refreshBtn">🔄 بروزرسانی</button></div>`;
 
 // ---- 24h temp chart ----
 const temps24=hrl.temperature_2m.slice(0,24);
@@ -297,7 +303,12 @@ document.getElementById('app').innerHTML=
 hero+chart+popHtml+
 '<div class="hint-bar">👇 روز مورد نظر رو لمس کن تا جزئیات ساعتی باز بشه</div>'+
 `<div class="days-container">${dhtml}</div>`+
-`<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • بروزرسانی لحظه‌ای • ساخته شده با ❤️</div>`;
+`<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • بروزرسانی: ${now}</div>`;
+document.getElementById('refreshBtn').addEventListener('click',async function(){
+  const b=this;b.disabled=true;b.textContent='⏳ در حال بروزرسانی…';
+  try{await main(true)}catch(e){}
+  b.disabled=false;b.textContent='🔄 بروزرسانی';
+});
 }
 
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
