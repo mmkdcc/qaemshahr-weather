@@ -30,9 +30,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .days-container{padding:16px 10px;display:flex;flex-direction:column;gap:10px}
 .day-card{background:#111827;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}
 .day-card:active{transform:scale(.99)}
-details{width:100%}
+details{width:100%;display:block}
 details[open]{background:#0d1220}
-summary{padding:14px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;-webkit-user-select:none;user-select:none}
+details>summary{list-style:none}
+details>summary::-webkit-details-marker,details>summary::marker{display:none;content:""}
+summary{padding:16px 14px;cursor:pointer;touch-action:manipulation;list-style:none;display:flex;align-items:center;gap:10px;-webkit-user-select:none;user-select:none}
 summary::-webkit-details-marker{display:none}
 .d-icon{font-size:1.8rem;flex-shrink:0}
 .d-info{flex:1;min-width:0}
@@ -50,7 +52,8 @@ summary::-webkit-details-marker{display:none}
 .tag-sub{background:#1e293b;color:#94a3b8;font-size:.55rem;padding:2px 7px;border-radius:5px;font-weight:600;margin-right:5px;vertical-align:middle;border:1px solid rgba(255,255,255,.08)}
 .d-arrow{font-size:1.3rem;color:#475569;transition:transform .3s;flex-shrink:0;font-weight:300}
 details[open] .d-arrow{transform:rotate(90deg);color:#38bdf8}
-.h-panel{padding:0 14px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.h-panel{padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06);animation:panelIn .3s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .p-sec{margin-top:14px}
 .p-title{font-size:.7rem;color:#64748b;font-weight:600;margin-bottom:8px}
 .mini-chart{display:flex;gap:1px;height:65px;align-items:flex-end;padding:0 4px}
@@ -313,6 +316,20 @@ hero+chart+popHtml+
 '<div class="hint-bar">👇 روز مورد نظر رو لمس کن تا جزئیات ساعتی باز بشه</div>'+
 `<div class="days-container">${dhtml}</div>`+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
+
+/* robust day-card toggling (fixes unresponsive taps on mobile) */
+document.querySelectorAll('.day-card details').forEach(d=>{
+  d.addEventListener('toggle',()=>{});
+});
+document.addEventListener('click',function(e){
+  const sum=e.target.closest('.day-card summary');
+  if(!sum)return;
+  if(e.target.closest('a,button,input'))return;
+  const det=sum.parentElement;
+  e.preventDefault();
+  det.open=!det.open;
+},{passive:false});
+
 document.getElementById('refreshBtn').addEventListener('click',async function(){
   const b=this;
   if(b.disabled)return;
