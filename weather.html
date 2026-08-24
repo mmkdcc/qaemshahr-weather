@@ -11,7 +11,7 @@
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 @keyframes spin{to{transform:rotate(360deg)}}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;background:#080c18;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;background:#080c18;color:#e2e8f0;min-height:100vh;overflow-x:hidden;overscroll-behavior:none;scroll-behavior:auto}
 .hero{padding:28px 20px 36px;text-align:center;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.03) 0%,transparent 60%);animation:pulse 4s ease-in-out infinite}
 .hero-loc{font-size:.75rem;color:rgba(255,255,255,.75);letter-spacing:1px;margin-bottom:6px;position:relative;font-weight:600}
