@@ -27,8 +27,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .chart-section h3,.pop-section h3{font-size:.8rem;color:#64748b;margin-bottom:8px;font-weight:600}
 .chart-box,.pop-box{background:#111827;border-radius:16px;padding:14px 8px 8px;border:1px solid rgba(255,255,255,.05)}
 .pop-box{padding:14px}
-.days-container{padding:0 10px 16px;display:flex;flex-direction:column;gap:12px}
-.day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}.day-card:last-child{margin-bottom:0}
+.days-container{padding:0 10px 16px}
+.day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}.day-card+.day-card{margin-top:12px}.day-card:last-child{margin-bottom:0}
 .day-card:active{transform:scale(.99)}
 .d-head{width:100%;display:flex;align-items:center;gap:10px;padding:16px 14px;background:none;border:none;color:inherit;font-family:inherit;text-align:right;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-appearance:none;appearance:none;outline:none}
 .d-head:focus-visible{outline:2px solid #38bdf8;outline-offset:-2px;border-radius:16px}
@@ -315,35 +315,24 @@ hero+chart+popHtml+
 `<div class="days-container">${dhtml}</div>`+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 
-/* === Day card accordion — robust, no scroll jump === */
-let _cardScrollY=0;
+/* === Day card accordion === */
 function bindDayCards(){
-  document.querySelectorAll('.day-card').forEach(card=>{
-    if(card.__bound)return; card.__bound=true;
-    const btn=card.querySelector('.d-head');
-    if(!btn)return;
-    // Capture on pointerdown (works for touch + mouse)
-    btn.addEventListener('pointerdown',e=>{
-      _cardScrollY=window.scrollY;
-      e.preventDefault(); // prevents focus
-    },{passive:false});
+  document.querySelectorAll('.day-card .d-head').forEach(btn=>{
+    if(btn.__bound)return; btn.__bound=true;
     btn.addEventListener('click',e=>{
       e.preventDefault();
+      const card=btn.closest('.day-card');
       const wasOpen=card.classList.contains('open');
       // Close all
       document.querySelectorAll('.day-card.open').forEach(c=>{
         c.classList.remove('open');
-        const b=c.querySelector('.d-head');if(b)b.setAttribute('aria-expanded','false');
+        c.querySelector('.d-head')?.setAttribute('aria-expanded','false');
       });
-      // Open this if it was closed
+      // Open if was closed
       if(!wasOpen){
         card.classList.add('open');
         btn.setAttribute('aria-expanded','true');
       }
-      // Restore scroll position (undo browser auto-scroll from layout change)
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        window.scrollTo(0,_cardScrollY);
-      }));
     });
   });
 }
