@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0e1a">
+<title>جستجوی شهر | آب و هوا</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;
+  background:#0a0e1a;color:#f1f5f9;
+  min-height:100vh;padding:20px 16px 40px;
+}
+.top{max-width:480px;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between}
+.back{color:#818cf8;text-decoration:none;font-size:.85rem;font-weight:600}
+.h-title{font-size:1.2rem;font-weight:800;background:linear-gradient(135deg,#f1f5f9,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:center}
+.search-wrap{position:relative;max-width:480px;margin:0 auto 6px}
+#q{
+  width:100%;padding:14px 44px 14px 14px;border-radius:14px;border:1px solid rgba(99,102,241,.25);
+  background:#111827;color:#f1f5f9;font-size:.95rem;font-family:inherit;outline:none;transition:border .2s, box-shadow .2s;
+}
+#q:focus{border-color:#818cf8;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+#q::placeholder{color:#475569}
+.s-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1rem;pointer-events:none}
+.clear{position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#475569;font-size:1rem;cursor:pointer;display:none}
+.hint{max-width:480px;margin:0 auto 16px;font-size:.7rem;color:#475569;text-align:center;line-height:1.7}
+.results{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.city{
+  display:flex;align-items:center;gap:12px;background:#111827;border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:13px 14px;text-decoration:none;color:#f1f5f9;transition:all .2s ease;
+  animation:fadeUp .35s ease both;
+}
+.city:hover{border-color:rgba(251,191,36,.35);transform:translateY(-2px)}
+.c-icon{font-size:1.4rem;flex-shrink:0}
+.c-info{flex:1;min-width:0}
+.c-name{font-weight:700;font-size:.9rem}
+.c-sub{font-size:.68rem;color:#64748b;margin-top:2px}
+.go{font-size:.7rem;color:#818cf8;background:rgba(99,102,241,.12);padding:4px 10px;border-radius:8px;flex-shrink:0;font-weight:600}
+.empty{text-align:center;color:#475569;font-size:.8rem;padding:30px 10px;line-height:1.8}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid #334155;border-top-color:#818cf8;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-4px}
+.quick{max-width:480px;margin:22px auto 0}
+.q-title{font-size:.72rem;color:#475569;margin-bottom:10px;font-weight:600}
+.q-chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  background:#111827;border:1px solid rgba(255,255,255,.07);color:#94a3b8;font-size:.72rem;
+  padding:6px 13px;border-radius:20px;text-decoration:none;transition:all .2s;
+}
+.chip:hover{color:#fbbf24;border-color:rgba(251,191,36,.3)}
+.footer{max-width:480px;margin:34px auto 0;text-align:center;color:#334155;font-size:.65rem}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <span class="h-title">🔎 جستجوی شهر</span>
+  <a class="back" href="index.html">→ بازگشت</a>
+</div>
+
+<div class="search-wrap">
+  <span class="s-icon">🏙️</span>
+  <input id="q" type="search" placeholder="نام شهر رو بنویس… مثلاً ساری، تهران، شیراز" autocomplete="off">
+  <button class="clear" id="clear" aria-label="پاک کردن">✕</button>
+</div>
+<div class="hint">حداقل ۲ حرف بنویس — همه شهرهای ایران و جهان پشتیبانی میشن</div>
+
+<div class="results" id="res"></div>
+
+<div class="quick" id="quickBox">
+  <div class="q-title">⚡ شهرهای پرطرفدار</div>
+  <div class="q-chips" id="chips"></div>
+</div>
+
+<div class="footer">داده‌ها از Open-Meteo • بروزرسانی خودکار هر ۱ ساعت</div>
+
+<script>
+const POPULAR=[
+ {n:"تهران",lat:35.6892,lon:51.3890},
+ {n:"مشهد",lat:36.2605,lon:59.6168},
+ {n:"اصفهان",lat:32.6539,lon:51.6660},
+ {n:"شیراز",lat:29.5918,lon:52.5837},
+ {n:"تبریز",lat:38.0800,lon:46.2919},
+ {n:"ساری",lat:36.5633,lon:53.0601},
+ {n:"بابل",lat:36.5513,lon:52.6784},
+ {n:"آمل",lat:36.4696,lon:52.3507},
+];
+let timer=null,lastQ="",ctrl=null;
+
+const resEl=document.getElementById('res');
+const qEl=document.getElementById('q');
+const clearBtn=document.getElementById('clear');
+
+// chips
+document.getElementById('chips').innerHTML=POPULAR.map(c=>
+ `<a class="chip" href="#" data-n="${c.n}" data-lat="${c.lat}" data-lon="${c.lon}">${c.n}</a>`).join('');
+document.getElementById('chips').addEventListener('click',e=>{
+ const a=e.target.closest('.chip'); if(!a)return;
+ e.preventDefault(); goCity(a.dataset.n,+a.dataset.lat,+a.dataset.lon);
+});
+
+function goCity(name,lat,lon){
+ location.href=`weather.html?name=${encodeURIComponent(name)}&lat=${lat}&lon=${lon}`;
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+async function search(q){
+ if(ctrl) ctrl.abort();
+ ctrl=new AbortController();
+ resEl.innerHTML='<div class="empty"><span class="spin"></span><br>در حال جستجو…</div>';
+ try{
+   const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=12&language=fa&format=json`,{signal:ctrl.signal});
+   const d=await r.json();
+   const list=(d.results||[]).filter(c=>true);
+   if(!list.length){
+     resEl.innerHTML=`<div class="empty">😕 شهری با نام «${esc(q)}» پیدا نشد<br>املای دیگه‌ای رو امتحان کن</div>`;
+     return;
+   }
+   resEl.innerHTML=list.map((c,i)=>{
+     const sub=[c.admin1,c.country].filter(Boolean).join('، ');
+     return `<a class="city" style="animation-delay:${i*40}ms" href="#" data-lat="${c.latitude}" data-lon="${c.longitude}" data-n="${esc(c.name)}">
+       <span class="c-icon">${c.country_code==='IR'?'🇮🇷':'🌍'}</span>
+       <span class="c-info"><span class="c-name">${esc(c.name)}</span><span class="c-sub" style="display:block">${esc(sub)}</span></span>
+       <span class="go">مشاهده ›</span></a>`;
+   }).join('');
+ }catch(e){
+   if(e.name!=='AbortError') resEl.innerHTML='<div class="empty">⚠️ خطا در اتصال — دوباره تلاش کن</div>';
+ }
+}
+
+resEl.addEventListener('click',e=>{
+ const a=e.target.closest('.city'); if(!a)return;
+ e.preventDefault(); goCity(a.dataset.n,+a.dataset.lat,+a.dataset.lon);
+});
+
+qEl.addEventListener('input',()=>{
+ const v=qEl.value.trim();
+ clearBtn.style.display=v?'block':'none';
+ document.getElementById('quickBox').style.display=v?'none':'block';
+ clearTimeout(timer);
+ if(v.length<2){ if(!v) resEl.innerHTML=''; else resEl.innerHTML=''; return; }
+ timer=setTimeout(()=>{lastQ=v;search(v)},400);
+});
+clearBtn.addEventListener('click',()=>{
+ qEl.value='';clearBtn.style.display='none';
+ resEl.innerHTML='';document.getElementById('quickBox').style.display='block';qEl.focus();
+});
+</script>
+</body>
+</html>
