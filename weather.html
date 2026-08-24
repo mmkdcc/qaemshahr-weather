@@ -330,13 +330,15 @@ function bindDayCards(){
     },{passive:false});
     btn.addEventListener('click',e=>{
       e.preventDefault();e.stopPropagation();
-      if(!captured){captured=true;} // allow click fallback
       captured=false;
-      // Restore scroll position (undo any browser auto-scroll)
-      try{window.scrollTo(0,scrollY)}catch(x){}
       btn.blur({preventScroll:true});
       const card=btn.closest('.day-card');
       const willOpen=!card.classList.contains('open');
+      // Measure btn position before layout change
+      const btnRect=btn.getBoundingClientRect();
+      const btnAbsTop=btnRect.top+window.scrollY;
+      
+      // Toggle: close all, then open this if needed
       document.querySelectorAll('.day-card.open').forEach(c=>{
         c.classList.remove('open');
         const b=c.querySelector('.d-head');if(b)b.setAttribute('aria-expanded','false');
@@ -345,6 +347,15 @@ function bindDayCards(){
         card.classList.add('open');
         btn.setAttribute('aria-expanded','true');
       }
+      
+      // Compensate for layout shift: measure card height change and adjust scroll
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          const newBtnRect=btn.getBoundingClientRect();
+          const shift=newBtnRect.top-btnRect.top;
+          if(Math.abs(shift)>1) window.scrollBy(0,shift);
+        });
+      });
     });
   });
 }
