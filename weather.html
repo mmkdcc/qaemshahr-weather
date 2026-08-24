@@ -13,7 +13,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;background:#080c18;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
 .hero{padding:28px 20px 36px;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.05) 0%,transparent 60%);animation:pulse 4s ease-in-out infinite}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.03) 0%,transparent 60%);animation:pulse 4s ease-in-out infinite}
 .hero-loc{font-size:.75rem;color:rgba(255,255,255,.75);letter-spacing:1px;margin-bottom:6px;position:relative;font-weight:600}
 .hero-icon{font-size:4.2rem;line-height:1;margin:6px 0;filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));position:relative}
 .hero-temp{font-size:4.8rem;font-weight:900;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.3);line-height:1;margin:4px 0;position:relative}
@@ -111,8 +111,8 @@ const CITY={
 document.title=(CITY.n.split('،')[0])+" | آب و هوا";
 
 const WMO={
- 0:["آفتابی","☀️","linear-gradient(165deg,#4a3a1c,#332812)"],
- 1:["غالباً آفتابی","🌤️","linear-gradient(165deg,#443619,#332812)"],
+ 0:["آفتابی","☀️","linear-gradient(170deg,#2b2416,#1a1610)"],
+ 1:["غالباً آفتابی","🌤️","linear-gradient(170deg,#281f13,#191410)"],
  2:["نیمه ابری","⛅","linear-gradient(160deg,#3d4a5c,#2c3646)"],
  3:["ابری","☁️","linear-gradient(160deg,#3b4049,#272c34)"],
  45:["مه‌آلود","🌫️","linear-gradient(160deg,#454c58,#333944)"],
