@@ -111,8 +111,8 @@ const CITY={
 document.title=(CITY.n.split('،')[0])+" | آب و هوا";
 
 const WMO={
- 0:["آفتابی","☀️","linear-gradient(160deg,#7c5a1e,#5c4218)"],
- 1:["غالباً آفتابی","🌤️","linear-gradient(160deg,#6e5527,#5c4218)"],
+ 0:["آفتابی","☀️","linear-gradient(165deg,#4a3a1c,#332812)"],
+ 1:["غالباً آفتابی","🌤️","linear-gradient(165deg,#443619,#332812)"],
  2:["نیمه ابری","⛅","linear-gradient(160deg,#3d4a5c,#2c3646)"],
  3:["ابری","☁️","linear-gradient(160deg,#3b4049,#272c34)"],
  45:["مه‌آلود","🌫️","linear-gradient(160deg,#454c58,#333944)"],
@@ -324,7 +324,10 @@ function bindDayCards(){
       const card=btn.closest('.day-card');
       const willOpen=!card.classList.contains('open');
       document.querySelectorAll('.day-card.open').forEach(c=>{c.classList.remove('open');c.querySelector('.d-head').setAttribute('aria-expanded','false')});
-      if(willOpen){card.classList.add('open');btn.setAttribute('aria-expanded','true')}
+      if(willOpen){
+        card.classList.add('open');btn.setAttribute('aria-expanded','true');
+        setTimeout(()=>{try{card.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}},80);
+      }
     });
   });
 }
