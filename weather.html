@@ -49,8 +49,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .d-arrow{font-size:1.3rem;color:#475569;transition:transform .3s;flex-shrink:0;font-weight:300}
 .day-card.open{background:#0d1220}
 .day-card.open .d-arrow{transform:rotate(90deg);color:#38bdf8}
-.day-card .h-panel{max-height:0;overflow:hidden;padding:0 14px 0;border-top:none;transition:max-height .35s ease}
-.day-card.open .h-panel{max-height:2000px;padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.day-card:not(.open) .h-panel{display:none}
+.h-panel{padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06);animation:panelIn .3s ease}
 .h-panel{padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06);animation:panelIn .3s ease}
 @keyframes panelIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .p-sec{margin-top:14px}
@@ -316,12 +316,16 @@ hero+chart+popHtml+
 `<div class="days-container">${dhtml}</div>`+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 
-/* === Day card accordion (max-height, no layout shift) === */
+/* === Day card accordion — scroll-stable === */
 function bindDayCards(){
   document.querySelectorAll('.day-card .d-head').forEach(btn=>{
     if(btn.__bound)return; btn.__bound=true;
     btn.addEventListener('click',e=>{
       e.preventDefault();
+      
+      // Capture exact button position BEFORE layout change
+      const btnRect=btn.getBoundingClientRect();
+      
       const card=btn.closest('.day-card');
       const wasOpen=card.classList.contains('open');
       document.querySelectorAll('.day-card.open').forEach(c=>{
@@ -331,6 +335,13 @@ function bindDayCards(){
       if(!wasOpen){
         card.classList.add('open');
         btn.setAttribute('aria-expanded','true');
+      }
+      
+      // After layout shift: put button back where it was
+      const after=btn.getBoundingClientRect();
+      const shift=after.top-btnRect.top;
+      if(Math.abs(shift)>1){
+        window.scrollTo({top:window.scrollY+shift,behavior:'instant'});
       }
     });
   });
