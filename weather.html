@@ -294,7 +294,7 @@ const dow=DNAMES[["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","S
    rows+=`<tr class="${rc}"><td class="tc-time">${String(hr).padStart(2,'0')}:00 <span class="tc-lbl">${hlabel(hr)}</span></td><td class="tc-desc">${wi2} ${wd}</td><td class="tc-temp">${pn(Math.round(t))}°</td><td class="tc-feels">${pn(Math.round(fl))}°</td><td class="tc-humid">${pn(Math.round(hu))}%</td><td class="tc-pop">${pn(pp)}%</td><td class="tc-wind">${pn(Math.round(wi))} km/h</td></tr>`;
  });
 
- dhtml+=`<div class="day-card${vis?" open":""}""><button type="button" class="d-head" aria-expanded="${vis?"true":"false"}">
+ dhtml+=`<div class="day-card${vis?" open":""}"><button type="button" class="d-head" aria-expanded="${vis?"true":"false"}">
 <div class="d-icon">${dicon}</div>
 <div class="d-info"><div class="d-title">${dow} <small>${pn(dayN)} ${m}</small> ${tag}</div><div class="d-desc">${ddesc}</div></div>
 <div class="d-stats"><div class="d-trange"><span class="t-hi">${pn(Math.round(mx))}°</span><span class="t-sep">/</span><span class="t-lo">${pn(Math.round(mn))}°</span></div>
