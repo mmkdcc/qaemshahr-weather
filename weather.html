@@ -28,7 +28,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .chart-box,.pop-box{background:#111827;border-radius:16px;padding:14px 8px 8px;border:1px solid rgba(255,255,255,.05)}
 .pop-box{padding:14px}
 .days-container{padding:0 10px 16px}
-.day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}.day-card+.day-card{margin-top:12px}.day-card:last-child{margin-bottom:0}
+.day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}
 .day-card:active{transform:scale(.99)}
 .d-head{width:100%;display:flex;align-items:center;gap:10px;padding:16px 14px;background:none;border:none;color:inherit;font-family:inherit;text-align:right;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-appearance:none;appearance:none;outline:none}
 .d-head:focus-visible{outline:2px solid #38bdf8;outline-offset:-2px;border-radius:16px}
@@ -68,7 +68,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .tc-wind{color:#34d399}
 .day-row{background:rgba(255,255,255,.02)}
 .night-row{background:rgba(15,23,42,.5)}
-.summary-box{background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(139,92,246,.08));border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(99,102,241,.15)}.day-card:last-child{margin-bottom:0}
+.summary-box{background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(139,92,246,.08));border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(99,102,241,.15)}
 .summary-text{font-size:.8rem;color:#e2e8f0;line-height:1.8;direction:rtl}
 .hint-bar{text-align:center;padding:10px;color:#475569;font-size:.7rem}
 .footer{text-align:center;padding:20px 14px 36px;color:#334155;font-size:.65rem}
@@ -292,7 +292,7 @@ const dow=DNAMES[["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","S
    rows+=`<tr class="${rc}"><td class="tc-time">${String(hr).padStart(2,'0')}:00 <span class="tc-lbl">${hlabel(hr)}</span></td><td class="tc-desc">${wi2} ${wd}</td><td class="tc-temp">${pn(Math.round(t))}°</td><td class="tc-feels">${pn(Math.round(fl))}°</td><td class="tc-humid">${pn(Math.round(hu))}%</td><td class="tc-pop">${pn(pp)}%</td><td class="tc-wind">${pn(Math.round(wi))} km/h</td></tr>`;
  });
 
- dhtml+=`<div class="day-card${vis?" open":""}"><button type="button" class="d-head" aria-expanded="${vis?"true":"false"}">
+ dhtml+=`<div class="day-card${vis?" open":""}" style="margin-bottom:12px""><button type="button" class="d-head" aria-expanded="${vis?"true":"false"}">
 <div class="d-icon">${dicon}</div>
 <div class="d-info"><div class="d-title">${dow} <small>${pn(dayN)} ${m}</small> ${tag}</div><div class="d-desc">${ddesc}</div></div>
 <div class="d-stats"><div class="d-trange"><span class="t-hi">${pn(Math.round(mx))}°</span><span class="t-sep">/</span><span class="t-lo">${pn(Math.round(mn))}°</span></div>
