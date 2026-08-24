@@ -326,6 +326,11 @@ function bindDayCards(){
       e.preventDefault();
       const card=btn.closest('.day-card');
       const wasOpen=card.classList.contains('open');
+      // Capture: scroll pos + position of all headers relative to document
+      const y0=window.scrollY;
+      const heads=[...document.querySelectorAll('.d-head')];
+      const topsBefore=heads.map(h=>h.getBoundingClientRect().top);
+      
       document.querySelectorAll('.day-card.open').forEach(c=>{
         c.classList.remove('open');
         c.querySelector('.d-head')?.setAttribute('aria-expanded','false');
@@ -334,6 +339,14 @@ function bindDayCards(){
         card.classList.add('open');
         btn.setAttribute('aria-expanded','true');
       }
+      
+      // After layout settles: shift scroll so the tapped header keeps its
+      // exact viewport position (compensates for panels above opening/closing)
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        const idx=heads.indexOf(btn);
+        const dy=btn.getBoundingClientRect().top-topsBefore[idx];
+        if(Math.abs(dy)>1) window.scrollTo(0,y0+dy);
+      }));
     });
   });
 }
