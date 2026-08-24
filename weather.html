@@ -50,7 +50,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .day-card.open{background:#0d1220}
 .day-card.open .d-arrow{transform:rotate(90deg);color:#38bdf8}
 .day-card:not(.open) .h-panel{display:none}
-html.scroll-locked{overflow:clip !important;position:fixed;width:100%;height:100%}
 .h-panel{padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06);animation:panelIn .3s ease}
 .h-panel{padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06);animation:panelIn .3s ease}
 @keyframes panelIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
@@ -317,19 +316,12 @@ hero+chart+popHtml+
 `<div class="days-container">${dhtml}</div>`+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 
-/* === Day card accordion — CSS scroll lock === */
-function lockScroll(){
-  const y=window.scrollY;
-  document.documentElement.classList.add('scroll-locked');
-  document.documentElement.style.top=-y+'px';
-  setTimeout(()=>{document.documentElement.classList.remove('scroll-locked');document.documentElement.style.top=''},200);
-}
+/* === Day card accordion === */
 function bindDayCards(){
   document.querySelectorAll('.day-card .d-head').forEach(btn=>{
     if(btn.__bound)return; btn.__bound=true;
     btn.addEventListener('click',e=>{
       e.preventDefault();
-      lockScroll();
       const card=btn.closest('.day-card');
       const wasOpen=card.classList.contains('open');
       document.querySelectorAll('.day-card.open').forEach(c=>{
