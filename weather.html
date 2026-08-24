@@ -84,7 +84,12 @@ details[open] .d-arrow{transform:rotate(90deg);color:#38bdf8}
 .refresh-btn{display:inline-flex;align-items:center;gap:6px;margin-top:14px;color:#a5b4fc;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.32);padding:8px 20px;border-radius:26px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;backdrop-filter:blur(6px);transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s;will-change:transform;-webkit-user-select:none;user-select:none}
 .refresh-btn:hover{background:rgba(99,102,241,.24);transform:translateY(-2px)}
 .refresh-btn:active{transform:scale(.96)}
-.refresh-btn:disabled{opacity:.55;cursor:wait;transform:none}
+.refresh-btn:disabled{opacity:.75;cursor:wait;transform:none}
+.btn-spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(165,180,252,.3);border-top-color:#a5b4fc;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+@keyframes flashUp{0%{opacity:.35}100%{opacity:1}}
+.refreshing-flash{animation:flashUp .5s ease}
+@keyframes updPop{0%{color:#4ade80;transform:scale(1.15)}100%{color:#94a3b8;transform:scale(1)}}
+#updTime{display:inline-block}
 .loader{max-width:420px;margin:80px auto;text-align:center;color:#64748b;font-size:.85rem;line-height:2}
 .spin{display:inline-block;width:26px;height:26px;border:3px solid #1e293b;border-top-color:#fbbf24;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px;display:block;margin-inline:auto}
 .err{max-width:420px;margin:80px auto;text-align:center;color:#f87171;font-size:.85rem;line-height:2}
@@ -307,11 +312,19 @@ document.getElementById('app').innerHTML=
 hero+chart+popHtml+
 '<div class="hint-bar">👇 روز مورد نظر رو لمس کن تا جزئیات ساعتی باز بشه</div>'+
 `<div class="days-container">${dhtml}</div>`+
-`<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • بروزرسانی: ${now}</div>`;
+`<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 document.getElementById('refreshBtn').addEventListener('click',async function(){
-  const b=this;b.disabled=true;b.textContent='⏳ در حال بروزرسانی…';
+  const b=this;
+  if(b.disabled)return;
+  b.disabled=true;b.classList.add('refreshing');
+  b.innerHTML='<span class="btn-spin"></span> در حال بروزرسانی…';
   try{await main(true)}catch(e){}
-  b.disabled=false;b.textContent='🔄 بروزرسانی';
+  b.disabled=false;b.classList.remove('refreshing');
+  b.textContent='✓ بروزرسانی شد';
+  const t=document.getElementById('updTime');
+  if(t){t.textContent=new Date().toLocaleString('fa-IR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});t.style.animation='none';void t.offsetWidth;t.style.animation='updPop .6s ease';}
+  document.getElementById('app').classList.remove('refreshing-flash');void document.getElementById('app').offsetWidth;document.getElementById('app').classList.add('refreshing-flash');
+  setTimeout(()=>{b.textContent='🔄 بروزرسانی'},2500);
 });
 }
 
