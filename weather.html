@@ -317,14 +317,21 @@ hero+chart+popHtml+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 
 /* === Day card accordion — scroll-stable === */
+let _savedScrollY=0;
 function bindDayCards(){
   document.querySelectorAll('.day-card .d-head').forEach(btn=>{
     if(btn.__bound)return; btn.__bound=true;
+    // Intercept scroll during click processing
+    const onScroll=()=>{
+      window.removeEventListener('scroll',onScroll);
+      window.scrollTo(0,_savedScrollY);
+    };
     btn.addEventListener('click',e=>{
       e.preventDefault();
-      
-      // Capture exact button position BEFORE layout change
-      const btnRect=btn.getBoundingClientRect();
+      // Capture scroll BEFORE any layout change
+      _savedScrollY=window.scrollY;
+      // Listen for the browser's auto-scroll and cancel it
+      window.addEventListener('scroll',onScroll);
       
       const card=btn.closest('.day-card');
       const wasOpen=card.classList.contains('open');
@@ -335,13 +342,6 @@ function bindDayCards(){
       if(!wasOpen){
         card.classList.add('open');
         btn.setAttribute('aria-expanded','true');
-      }
-      
-      // After layout shift: put button back where it was
-      const after=btn.getBoundingClientRect();
-      const shift=after.top-btnRect.top;
-      if(Math.abs(shift)>1){
-        window.scrollTo({top:window.scrollY+shift,behavior:'instant'});
       }
     });
   });
