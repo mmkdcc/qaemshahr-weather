@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>آب و هوا | پیش‌بینی ۷ روزه</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -28,14 +28,14 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .chart-box,.pop-box{background:#111827;border-radius:16px;padding:14px 8px 8px;border:1px solid rgba(255,255,255,.05)}
 .pop-box{padding:14px}
 .days-container{padding:16px 10px;display:flex;flex-direction:column;gap:10px}
-.day-card{background:#111827;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}
+.day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}
 .day-card:active{transform:scale(.99)}
 details{width:100%;display:block}
 details[open]{background:#0d1220}
 details>summary{list-style:none}
 details>summary::-webkit-details-marker,details>summary::marker{display:none;content:""}
 summary{padding:16px 14px;cursor:pointer;touch-action:manipulation;list-style:none;display:flex;align-items:center;gap:10px;-webkit-user-select:none;user-select:none}
-summary::-webkit-details-marker{display:none}
+summary::-webkit-details-marker,summary::marker{display:none;content:""}
 .d-icon{font-size:1.8rem;flex-shrink:0}
 .d-info{flex:1;min-width:0}
 .d-title{font-weight:700;font-size:.9rem;color:#f1f5f9}
@@ -321,15 +321,26 @@ hero+chart+popHtml+
 document.querySelectorAll('.day-card details').forEach(d=>{
   d.addEventListener('toggle',()=>{});
 });
-document.addEventListener('click',function(e){
-  const sum=e.target.closest('.day-card summary');
-  if(!sum)return;
-  if(e.target.closest('a,button,input'))return;
-  const det=sum.parentElement;
-  e.preventDefault();
-  det.open=!det.open;
-},{passive:false});
+/* Day-card toggle: let native <details> behavior run, with anti-double-toggle fallback */
+function bindDayCards(){
+  document.querySelectorAll('.day-card details').forEach(det=>{
+    if(det.__bound)return; det.__bound=true;
+    det.addEventListener('click',e=>{
+      if(e.target.closest('a,button,input'))return;
+      // If inside open panel body, do nothing.
+      const sum=det.querySelector('summary');
+      if(sum.contains(e.target)){
+        // schedule fallback: if native toggle didn't fire within 350ms, force it
+        const was=det.open;
+        clearTimeout(det.__t);
+        det.__t=setTimeout(()=>{ if(det.open===was) det.open=!was; },350);
+      }
+    });
+  });
+}
+bindDayCards();
 
+bindDayCards();
 document.getElementById('refreshBtn').addEventListener('click',async function(){
   const b=this;
   if(b.disabled)return;

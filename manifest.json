@@ -1,8 +1,8 @@
 {
-  "name": "آب و هوای قائمشهر",
+  "name": "آب و هوا",
   "short_name": "آب و هوا",
-  "description": "پیش‌بینی ۷ روزه آب و هوای قائمشهر",
-  "start_url": ".",
+  "description": "پیش‌بینی آب و هوا — قائمشهر و همه شهرهای ایران و جهان",
+  "start_url": "index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#080c18",
@@ -20,5 +20,6 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "scope": "."
 }
