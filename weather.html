@@ -28,7 +28,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .chart-box,.pop-box{background:#111827;border-radius:16px;padding:14px 8px 8px;border:1px solid rgba(255,255,255,.05)}
 .pop-box{padding:14px}
 .days-container{padding:0 10px 16px}
-.day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s}
+.day-card{background:#111827;border-radius:16px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.06);animation:fadeUp .4s ease;transition:transform .2s;margin-bottom:12px}.day-card:last-child{margin-bottom:0}
 .day-card:active{transform:scale(.99)}
 .d-head{width:100%;display:flex;align-items:center;gap:10px;padding:16px 14px;background:none;border:none;color:inherit;font-family:inherit;text-align:right;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-appearance:none;appearance:none;outline:none}
 .d-head:focus-visible{outline:2px solid #38bdf8;outline-offset:-2px;border-radius:16px}
@@ -49,7 +49,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Vazirmatn,sans-serif;b
 .d-arrow{font-size:1.3rem;color:#475569;transition:transform .3s;flex-shrink:0;font-weight:300}
 .day-card.open{background:#0d1220}
 .day-card.open .d-arrow{transform:rotate(90deg);color:#38bdf8}
-.day-card:not(.open) .h-panel{display:none}
+.day-card .h-panel{max-height:0;overflow:hidden;padding:0 14px 0;border-top:none;transition:max-height .35s ease}
+.day-card.open .h-panel{max-height:2000px;padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .h-panel{padding:6px 14px 14px;border-top:1px solid rgba(255,255,255,.06);animation:panelIn .3s ease}
 @keyframes panelIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .p-sec{margin-top:14px}
@@ -292,7 +293,7 @@ const dow=DNAMES[["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","S
    rows+=`<tr class="${rc}"><td class="tc-time">${String(hr).padStart(2,'0')}:00 <span class="tc-lbl">${hlabel(hr)}</span></td><td class="tc-desc">${wi2} ${wd}</td><td class="tc-temp">${pn(Math.round(t))}°</td><td class="tc-feels">${pn(Math.round(fl))}°</td><td class="tc-humid">${pn(Math.round(hu))}%</td><td class="tc-pop">${pn(pp)}%</td><td class="tc-wind">${pn(Math.round(wi))} km/h</td></tr>`;
  });
 
- dhtml+=`<div class="day-card${vis?" open":""}" style="margin-bottom:12px""><button type="button" class="d-head" aria-expanded="${vis?"true":"false"}">
+ dhtml+=`<div class="day-card${vis?" open":""}""><button type="button" class="d-head" aria-expanded="${vis?"true":"false"}">
 <div class="d-icon">${dicon}</div>
 <div class="d-info"><div class="d-title">${dow} <small>${pn(dayN)} ${m}</small> ${tag}</div><div class="d-desc">${ddesc}</div></div>
 <div class="d-stats"><div class="d-trange"><span class="t-hi">${pn(Math.round(mx))}°</span><span class="t-sep">/</span><span class="t-lo">${pn(Math.round(mn))}°</span></div>
@@ -315,7 +316,7 @@ hero+chart+popHtml+
 `<div class="days-container">${dhtml}</div>`+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 
-/* === Day card accordion === */
+/* === Day card accordion (max-height, no layout shift) === */
 function bindDayCards(){
   document.querySelectorAll('.day-card .d-head').forEach(btn=>{
     if(btn.__bound)return; btn.__bound=true;
@@ -323,12 +324,10 @@ function bindDayCards(){
       e.preventDefault();
       const card=btn.closest('.day-card');
       const wasOpen=card.classList.contains('open');
-      // Close all
       document.querySelectorAll('.day-card.open').forEach(c=>{
         c.classList.remove('open');
         c.querySelector('.d-head')?.setAttribute('aria-expanded','false');
       });
-      // Open if was closed
       if(!wasOpen){
         card.classList.add('open');
         btn.setAttribute('aria-expanded','true');
