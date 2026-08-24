@@ -316,22 +316,23 @@ hero+chart+popHtml+
 `<div class="days-container">${dhtml}</div>`+
 `<div class="footer">داده‌ها از <a href="https://open-meteo.com" style="color:#475569">Open-Meteo</a> • آخرین بروزرسانی: <b id="updTime" style="color:#94a3b8">${now}</b></div>`;
 
-/* === Day card accordion — scroll-stable === */
-let _savedScrollY=0;
+/* === Day card accordion — scroll-lock via polling === */
+let _scrollLockId=null;
+function lockScroll(y,ms){
+  clearInterval(_scrollLockId);
+  const end=Date.now()+ms;
+  _scrollLockId=setInterval(()=>{
+    if(Date.now()>end||window.scrollY===y){clearInterval(_scrollLockId);return}
+    window.scrollTo(0,y);
+  },16);
+}
 function bindDayCards(){
   document.querySelectorAll('.day-card .d-head').forEach(btn=>{
     if(btn.__bound)return; btn.__bound=true;
-    // Intercept scroll during click processing
-    const onScroll=()=>{
-      window.removeEventListener('scroll',onScroll);
-      window.scrollTo(0,_savedScrollY);
-    };
     btn.addEventListener('click',e=>{
       e.preventDefault();
-      // Capture scroll BEFORE any layout change
-      _savedScrollY=window.scrollY;
-      // Listen for the browser's auto-scroll and cancel it
-      window.addEventListener('scroll',onScroll);
+      const y=window.scrollY;
+      lockScroll(y,600);
       
       const card=btn.closest('.day-card');
       const wasOpen=card.classList.contains('open');
