@@ -5,34 +5,42 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0e1a">
+<meta name="description" content="پیش‌بینی آب و هوا — قائمشهر و همه شهرهای ایران و جهان">
 <link rel="manifest" href="manifest.json">
-<title>آب و هوای قائمشهر | پیش‌بینی ۷ روزه</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<title>آب و هوا | پیش‌بینی آب و هوا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(99,102,241,0.3)}50%{box-shadow:0 0 40px rgba(99,102,241,0.6)}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glowP{0%,100%{box-shadow:0 8px 32px rgba(99,102,241,.25)}50%{box-shadow:0 12px 44px rgba(99,102,241,.45)}}
+@keyframes glowW{0%,100%{box-shadow:0 8px 32px rgba(245,158,11,.22)}50%{box-shadow:0 12px 44px rgba(245,158,11,.42)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){
+ *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 
-*{margin:0;padding:0;box-sizing:border-box}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
 body{
-  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-family:'Vazirmatn',-apple-system,BlinkMacSystemFont,sans-serif;
   background:#0a0e1a;
   color:#f1f5f9;
   min-height:100vh;
+  min-height:100dvh;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:20px;
+  padding:24px 20px;
   overflow-x:hidden;
 }
 
-/* Background particles */
+/* Ambient background */
 .bg-particles{
   position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
+  inset:0;
   pointer-events:none;
   overflow:hidden;
   z-index:0;
@@ -41,61 +49,54 @@ body{
   content:'';
   position:absolute;
   border-radius:50%;
-  filter:blur(80px);
-  opacity:0.15;
+  filter:blur(90px);
+  opacity:.14;
+  will-change:transform;
 }
 .bg-particles::before{
-  width:400px;height:400px;
+  width:min(420px,90vw);height:min(420px,90vw);
   background:linear-gradient(135deg,#6366f1,#8b5cf6);
-  top:-100px;left:-100px;
-  animation:pulse 8s ease-in-out infinite;
+  top:-120px;left:-120px;
+  animation:pulse 9s ease-in-out infinite;
 }
 .bg-particles::after{
-  width:350px;height:350px;
+  width:min(360px,80vw);height:min(360px,80vw);
   background:linear-gradient(135deg,#f59e0b,#f97316);
-  bottom:-100px;right:-100px;
-  animation:pulse 8s ease-in-out infinite 4s;
+  bottom:-110px;right:-110px;
+  animation:pulse 9s ease-in-out infinite 4.5s;
 }
 
 .container{
   position:relative;
   z-index:1;
   width:100%;
-  max-width:420px;
+  max-width:430px;
   text-align:center;
 }
 
 /* Logo & Title */
 .logo{
   font-size:3rem;
-  margin-bottom:8px;
-  filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));
+  margin-bottom:10px;
+  filter:drop-shadow(0 6px 16px rgba(0,0,0,.35));
+  animation:float 6s ease-in-out infinite;
+  will-change:transform;
 }
 .title{
-  font-size:1.8rem;
+  font-size:1.9rem;
   font-weight:900;
-  background:linear-gradient(135deg,#f1f5f9,#94a3b8);
+  background:linear-gradient(135deg,#f8fafc,#94a3b8);
   -webkit-background-clip:text;
+  background-clip:text;
   -webkit-text-fill-color:transparent;
-  margin-bottom:6px;
+  margin-bottom:8px;
+  letter-spacing:-.5px;
 }
 .subtitle{
-  font-size:0.85rem;
+  font-size:.85rem;
   color:#64748b;
-  margin-bottom:40px;
-  line-height:1.6;
-}
-.location-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:rgba(99,102,241,0.1);
-  border:1px solid rgba(99,102,241,0.2);
-  padding:6px 14px;
-  border-radius:20px;
-  font-size:0.75rem;
-  color:#818cf8;
-  margin-bottom:32px;
+  margin-bottom:36px;
+  line-height:1.7;
 }
 
 /* Cards */
@@ -103,58 +104,54 @@ body{
 
 .card{
   position:relative;
-  border-radius:20px;
-  padding:28px 24px;
+  display:block;
+  border-radius:22px;
+  padding:26px 24px;
   text-decoration:none;
   color:#fff;
   overflow:hidden;
-  transition:all .3s ease;
-  animation:fadeUp .6s ease both;
+  transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease;
+  animation:fadeUp .7s cubic-bezier(.22,1,.36,1) both;
+  outline:none;
 }
-.card:nth-child(1){animation-delay:.1s}
-.card:nth-child(2){animation-delay:.25s}
+.card:nth-child(1){animation-delay:.08s}
+.card:nth-child(2){animation-delay:.2s}
+.card:focus-visible{outline:2px solid #fbbf24;outline-offset:3px}
+.card:active{transform:scale(.98)}
 
 .card::before{
   content:'';
   position:absolute;
-  top:0;left:0;
-  width:100%;height:100%;
-  opacity:0.15;
+  inset:0;
+  opacity:.13;
   z-index:0;
 }
 .card::after{
   content:'';
   position:absolute;
-  top:-50%;left:-50%;
-  width:200%;height:200%;
-  background:radial-gradient(circle,rgba(255,255,255,0.08) 0%,transparent 60%);
+  inset:0;
+  background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.09),transparent 45%);
+  opacity:0;
+  transition:opacity .4s ease;
   z-index:0;
 }
+.card:hover::after,.card:focus-visible::after{opacity:1}
 
 .card-market{
-  background:linear-gradient(135deg,#1e1b4b,#312e81);
-  border:1px solid rgba(129,140,248,0.3);
+  background:linear-gradient(140deg,#1e1b4b,#312e81);
+  border:1px solid rgba(129,140,248,.28);
+  box-shadow:0 8px 32px rgba(99,102,241,.18);
 }
-.card-market::before{
-  background:linear-gradient(135deg,#6366f1,#4f46e5);
-}
-.card-market:hover{
-  transform:translateY(-4px) scale(1.02);
-  box-shadow:0 12px 40px rgba(99,102,241,0.4);
-  animation:glow 2s ease-in-out infinite;
-}
+.card-market::before{background:linear-gradient(135deg,#6366f1,#4f46e5)}
+.card-market:hover{transform:translateY(-5px);animation:glowP 2.4s ease-in-out infinite}
 
 .card-weather{
-  background:linear-gradient(135deg,#1c1917,#292524);
-  border:1px solid rgba(251,191,36,0.3);
+  background:linear-gradient(140deg,#1c1917,#292524);
+  border:1px solid rgba(251,191,36,.28);
+  box-shadow:0 8px 32px rgba(245,158,11,.15);
 }
-.card-weather::before{
-  background:linear-gradient(135deg,#f59e0b,#d97706);
-}
-.card-weather:hover{
-  transform:translateY(-4px) scale(1.02);
-  box-shadow:0 12px 40px rgba(245,158,11,0.4);
-}
+.card-weather::before{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.card-weather:hover{transform:translateY(-5px);animation:glowW 2.4s ease-in-out infinite}
 
 .card-content{
   position:relative;
@@ -164,67 +161,71 @@ body{
   gap:16px;
 }
 .card-icon{
-  font-size:2.8rem;
+  font-size:2.6rem;
   flex-shrink:0;
-  filter:drop-shadow(0 2px 8px rgba(0,0,0,.3));
+  filter:drop-shadow(0 3px 10px rgba(0,0,0,.35));
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
 }
-.card-info{flex:1;text-align:right}
+.card:hover .card-icon{transform:scale(1.12) rotate(-4deg)}
+.card-info{flex:1;text-align:right;min-width:0}
 .card-title{
-  font-size:1.15rem;
+  font-size:1.12rem;
   font-weight:800;
   margin-bottom:4px;
 }
 .card-desc{
-  font-size:0.75rem;
-  color:rgba(255,255,255,0.6);
-  line-height:1.5;
+  font-size:.74rem;
+  color:rgba(255,255,255,.58);
+  line-height:1.6;
 }
 .card-arrow{
   font-size:1.5rem;
-  color:rgba(255,255,255,0.4);
+  color:rgba(255,255,255,.38);
   flex-shrink:0;
-  transition:transform .3s ease;
+  transition:transform .3s ease,color .3s ease;
 }
-.card:hover .card-arrow{
-  transform:translateX(-8px);
-  color:rgba(255,255,255,0.8);
+.card:hover .card-arrow,.card:focus-visible .card-arrow{
+  transform:translateX(-6px);
+  color:rgba(255,255,255,.85);
 }
 
-/* Features list */
+/* Features */
 .card-features{
   display:flex;
   flex-wrap:wrap;
   gap:6px;
-  margin-top:12px;
+  margin-top:14px;
   position:relative;
   z-index:1;
 }
 .card-feat{
-  font-size:0.65rem;
-  background:rgba(255,255,255,0.1);
-  padding:3px 10px;
-  border-radius:10px;
-  color:rgba(255,255,255,0.7);
+  font-size:.66rem;
+  font-weight:500;
+  background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.06);
+  padding:4px 11px;
+  border-radius:12px;
+  color:rgba(255,255,255,.72);
+  backdrop-filter:blur(4px);
 }
 
 /* Footer */
 .footer{
-  margin-top:40px;
+  margin-top:38px;
   text-align:center;
   color:#334155;
-  font-size:0.7rem;
+  font-size:.68rem;
   position:relative;
   z-index:1;
+  line-height:1.9;
 }
-.footer a{color:#475569;text-decoration:none}
-
-/* Live indicator */
 .live-dot{
   display:inline-block;
   width:6px;height:6px;
   background:#22c55e;
   border-radius:50%;
-  margin-right:4px;
+  margin-left:4px;
+  box-shadow:0 0 8px rgba(34,197,94,.8);
   animation:pulse 2s ease-in-out infinite;
 }
 </style>
@@ -237,10 +238,6 @@ body{
   <div class="logo">🌤️</div>
   <div class="title">آب و هوا</div>
   <div class="subtitle">پیش‌بینی آب و هوا</div>
-  <div class="location-badge">
-    <span class="live-dot"></span>
-    قائمشهر، مازندران
-  </div>
 
   <div class="cards">
     <!-- Weather Card -->
@@ -248,7 +245,7 @@ body{
       <div class="card-content">
         <div class="card-icon">🌤️</div>
         <div class="card-info">
-          <div class="card-title">آب و هوای قائمشهر</div>
+          <div class="card-title">قائمشهر</div>
           <div class="card-desc">پیش‌بینی ۷ روزه با جزئیات ساعتی و نمودار</div>
         </div>
         <div class="card-arrow">‹</div>
@@ -283,6 +280,17 @@ body{
     <span class="live-dot"></span> داده‌ها از Open-Meteo • بروزرسانی لحظه‌ای
   </div>
 </div>
+
+<script>
+/* Pointer-follow glow on cards (subtle, GPU-friendly) */
+document.querySelectorAll('.card').forEach(card=>{
+  card.addEventListener('pointermove',e=>{
+    const r=card.getBoundingClientRect();
+    card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
+    card.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');
+  },{passive:true});
+});
+</script>
 
 </body>
 </html>

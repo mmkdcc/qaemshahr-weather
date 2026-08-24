@@ -74,13 +74,17 @@ details[open] .d-arrow{transform:rotate(90deg);color:#38bdf8}
 .scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .scroll-x::-webkit-scrollbar{height:3px}
 .scroll-x::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
-.search-link{display:inline-block;margin:18px 6px 0;color:rgba(255,255,255,.85);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);padding:8px 18px;border-radius:24px;text-decoration:none;font-size:.78rem;font-weight:600;position:relative;backdrop-filter:blur(4px);transition:all .2s}
+.hero-btns{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px}
+.refresh-wrap{text-align:center}
+.search-link{display:inline-block;color:rgba(255,255,255,.88);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:9px 20px;border-radius:26px;text-decoration:none;font-size:.78rem;font-weight:600;backdrop-filter:blur(6px);transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s;will-change:transform}
 .search-link:hover{background:rgba(255,255,255,.2)}
-.home-link{display:inline-block;margin:18px 6px 0;color:#fcd34d;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);padding:8px 18px;border-radius:24px;text-decoration:none;font-size:.78rem;font-weight:600;position:relative;backdrop-filter:blur(4px);transition:all .2s}
+.home-link{display:inline-block;color:#fcd34d;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.32);padding:9px 20px;border-radius:26px;text-decoration:none;font-size:.78rem;font-weight:600;backdrop-filter:blur(6px);transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s;will-change:transform}
 .home-link:hover{background:rgba(251,191,36,.2)}
-.refresh-btn{display:inline-flex;align-items:center;gap:6px;margin-top:14px;color:#818cf8;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);padding:7px 16px;border-radius:24px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;position:relative;transition:all .2s}
-.refresh-btn:hover{background:rgba(99,102,241,.22)}
-.refresh-btn:disabled{opacity:.5;cursor:wait}
+.search-link:hover,.home-link:hover{transform:translateY(-2px)}
+.refresh-btn{display:inline-flex;align-items:center;gap:6px;margin-top:14px;color:#a5b4fc;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.32);padding:8px 20px;border-radius:26px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;backdrop-filter:blur(6px);transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s;will-change:transform;-webkit-user-select:none;user-select:none}
+.refresh-btn:hover{background:rgba(99,102,241,.24);transform:translateY(-2px)}
+.refresh-btn:active{transform:scale(.96)}
+.refresh-btn:disabled{opacity:.55;cursor:wait;transform:none}
 .loader{max-width:420px;margin:80px auto;text-align:center;color:#64748b;font-size:.85rem;line-height:2}
 .spin{display:inline-block;width:26px;height:26px;border:3px solid #1e293b;border-top-color:#fbbf24;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px;display:block;margin-inline:auto}
 .err{max-width:420px;margin:80px auto;text-align:center;color:#f87171;font-size:.85rem;line-height:2}
@@ -177,7 +181,7 @@ const hero=`<div class="hero" style="background:${cgrad}">
 <div class="hd"><span class="hd-l">🌡️ فشار</span><span class="hd-v">${pn(Math.round(cur.pressure_msl||0))} hPa</span></div>
 <div class="hd"><span class="hd-l">${uvE(cur.temperature_2m)} احساس</span><span class="hd-v">${pn(Math.round(cur.apparent_temperature))}°</span></div>
 </div>
-<div class="hero-btns"><a class="search-link" href="city.html">🔎 جستجوی شهر دیگر</a><a class="home-link" href="index.html">🏠 صفحه اصلی</a></div><button class="refresh-btn" id="refreshBtn">🔄 بروزرسانی</button></div>`;
+<div class="hero-btns"><a class="search-link" href="city.html">🔎 جستجوی شهر دیگر</a><a class="home-link" href="index.html">🏠 صفحه اصلی</a></div><div class="refresh-wrap"><button class="refresh-btn" id="refreshBtn">🔄 بروزرسانی</button></div>`;
 
 // ---- 24h temp chart ----
 const temps24=hrl.temperature_2m.slice(0,24);
