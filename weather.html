@@ -155,10 +155,11 @@ function hlabel(h){
 }
 
 async function main(silent){
- const url=`https://api.open-meteo.com/v1/forecast?latitude=${CITY.lat}&longitude=${CITY.lon}`
+ // پیش‌بینی چندمدلی: میانگین ECMWF (دقیق‌ترین) + GFS + ICON + Météo-France
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${CITY.lat}&longitude=${CITY.lon}`
   +"&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weathercode,windspeed_10m,pressure_msl"
   +"&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weathercode,windspeed_10m"
-  +"&timezone=Asia%2FTehran&forecast_days=7&models=ecmwf_ifs025";
+  +"&timezone=Asia%2FTehran&forecast_days=7&models=ecmwf_ifs025,gfs_seamless,icon_seamless,meteofrance_seamless";
  let data;
  if(!silent)document.getElementById('app').innerHTML='<div class="loader"><span class="spin"></span>در حال دریافت اطلاعات آب و هوا…</div>';
  try{
@@ -172,7 +173,30 @@ async function main(silent){
  render(data);
 }
 
-function render(data){
+function render(raw){
+// --- Ensemble: میانگین‌گیری از همه مدل‌ها برای دقت حداکثری ---
+let data;
+if(raw.hourly.temperature_2m_ecmwf_ifs025){
+  const h=raw.hourly;
+  const models={};
+  for(const k of Object.keys(h)){
+    const m=k.match(/^(\w+)_(?:ecmwf_ifs025|gfs_seamless|icon_seamless|meteofrance_seamless)$/);
+    if(m)models[m[1]]=k;
+  }
+  const merged={time:h.time};
+  for(const base in models){
+    // collect all per-model arrays for this variable
+    const arrs=Object.keys(h).filter(k=>k.startsWith(base+'_')).map(k=>h[k]);
+    if(arrs.length<=1){merged[base]=arrs[0]||h[models[base]];continue}
+    merged[base]=h[models[base]].map((_,i)=>{
+      const vals=arrs.map(a=>a[i]).filter(v=>v!=null);
+      return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+    });
+  }
+  data={current:raw.current,hourly:merged};
+}else{
+  data=raw; // fallback تک‌مدلی
+}
 const cur=data.current,hrl=data.hourly;
 const days={};
 hrl.time.forEach((t,i)=>{const d=t.slice(0,10);(days[d]=days[d]||[]).push(i)});
