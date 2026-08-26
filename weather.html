@@ -184,14 +184,27 @@ if(raw.hourly.temperature_2m_ecmwf_ifs025){
     if(m)models[m[1]]=k;
   }
   const merged={time:h.time};
+  const INTEGER_VARS=new Set(['weathercode']); // مقادیر گسسته: میانگین نمیگیریم، رایج‌ترین رو برمیداریم
   for(const base in models){
     // collect all per-model arrays for this variable
     const arrs=Object.keys(h).filter(k=>k.startsWith(base+'_')).map(k=>h[k]);
     if(arrs.length<=1){merged[base]=arrs[0]||h[models[base]];continue}
-    merged[base]=h[models[base]].map((_,i)=>{
-      const vals=arrs.map(a=>a[i]).filter(v=>v!=null);
-      return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
-    });
+    if(INTEGER_VARS.has(base)){
+      // mode: رایج‌ترین کد بین مدل‌ها (کد معتبر WMO تضمین میشه)
+      merged[base]=h[models[base]].map((_,i)=>{
+        const vals=arrs.map(a=>a[i]).filter(v=>v!=null&&WMO[v]!=null);
+        if(!vals.length)return h[models[base]][i]??0;
+        const cnt={};
+        vals.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+        return +Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+      });
+    }else{
+      // numeric: میانگین
+      merged[base]=h[models[base]].map((_,i)=>{
+        const vals=arrs.map(a=>a[i]).filter(v=>v!=null);
+        return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+      });
+    }
   }
   data={current:raw.current,hourly:merged};
 }else{
